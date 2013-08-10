@@ -62,31 +62,67 @@ namespace Icfp2013
                         //}
                         //Console.WriteLine(newTreeOfTreesNode.FunctionTreeRoot);
                         //System.IO.File.AppendAllText("allguesses.txt", newTreeOfTreesNode.FunctionTreeRoot + "\r\n");
-                        yield return new SAction() { Next = newTreeOfTreesNode };
+                        var funcEvals = newTreeOfTreesNode.FunctionTreeRoot.GetFuncEvals(problem);
+                        if (!Searcher.AllEvals.Contains(funcEvals))
+                        {
+                            Searcher.AllEvals.Add(funcEvals);
+                            //Console.WriteLine(newTreeOfTreesNode.FunctionTreeRoot);
+                            System.IO.File.AppendAllText("allguesses.txt", newTreeOfTreesNode.FunctionTreeRoot + "\r\n");
+                            yield return new SAction() { Next = newTreeOfTreesNode };
+                        }
+                        else
+                        {
+                            //skip this func
+                            //Console.WriteLine(newTreeOfTreesNode.FunctionTreeRoot);
+                        }
                     }
                 }
             }
         }
 
-        public IEnumerable<Operators.Op> GetAllowedOpsUpper(FunctionTreeNode node, Problem problem)
+        public List<Operators.Op> GetAllowedOpsUpper(FunctionTreeNode node, Problem problem)
         {
+            var result = new List<Operators.Op>();
             int arity = node.Children.Count + 1;
             for (int i = 0; i < Searcher.Ops[arity].Length; i++)
             {
                 if (!problem.AllowedOperators.Contains(new Tuple<int,int>(arity, i)) ||
                     arity == 3 && HasFold && Searcher.Ops[arity][i] is Operators.Fold) continue; //only one fold allowed per function
-                yield return Searcher.Ops[arity][i];
+                result.Add(Searcher.Ops[arity][i]);
             }
+
+            return Shuffle(result);
         }
 
-        public IEnumerable<Operators.Op> GetAllowedOpsLower(FunctionTreeNode node, Operators.Op upperOp, Problem problem)
-        {           
+        public List<Operators.Op> GetAllowedOpsLower(FunctionTreeNode node, Operators.Op upperOp, Problem problem)
+        {
+            var result = new List<Operators.Op>();
             for (int i = 0; i < Searcher.Ops[0].Length; i++)
             {
                 if (!node.IsInsideFoldLambda && !(upperOp is Operators.Fold) &&
                     (Searcher.Ops[0][i] is Operators.Arg) && ((Operators.Arg)Searcher.Ops[0][i]).ArgIndex != 0) continue; //y and z allowed only inside fold lambda
-                yield return Searcher.Ops[0][i];
+                result.Add(Searcher.Ops[0][i]);
             }
+
+            return Shuffle(result);
+        }
+
+        public static List<T> Shuffle<T>(List<T> array)
+        {
+            if (array.Count == 0) return new List<T>();
+
+            var result = new List<T>(array);            
+            Random rng = new Random();
+
+            result[0] = array[0];
+            for (int i = 1; i < array.Count; i++)
+            {
+                int j = rng.Next(0, i + 1);
+                result[i] = result[j];
+                result[j] = array[i];
+            }
+
+            return result;
         }
 
         //public void CreateChildren()

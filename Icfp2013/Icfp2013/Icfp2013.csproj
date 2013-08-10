@@ -47,6 +47,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Evals.cs" />
     <Compile Include="Problem.cs" />
     <Compile Include="Searcher.cs" />
     <Compile Include="EvaluationContext.cs" />

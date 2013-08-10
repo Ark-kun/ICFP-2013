@@ -58,15 +58,28 @@ namespace Icfp2013
         }
 
         public bool Equals(FunctionTreeNode other)
-        {
+        {            
             if (Children.Count != other.Children.Count) return false;
 
             for (int i = 0; i < Children.Count; i++)
-			{
-			    if(!Children[i].Equals(other.Children[i])) return false;
-			}
+            {
+                if (!Children[i].Equals(other.Children[i])) return false;
+            }
 
             return this.Operator == other.Operator; 
+        }
+
+        public Evals GetFuncEvals(Problem p)
+        {
+            int amount = 32;
+            Evals ev = new Evals() { Values = new ulong[amount] };
+            for (int i = 0; i < amount; i++)
+            {
+                Context.Arg = p.Evals[i][0];
+                ev.Values[i] = Eval();
+            }
+
+            return ev;
         }
 
         public bool IsTFold()

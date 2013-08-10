@@ -15,7 +15,9 @@ namespace Icfp2013
         Problem problem;
 
         EvaluationContext Context;
-        TreeOfTreesNode CurrentNode; 
+        TreeOfTreesNode CurrentNode;
+
+        public static HashSet<Evals> AllEvals;
 
         public static Operators.Op[][] Ops = new Op[][] 
         {
@@ -58,65 +60,18 @@ namespace Icfp2013
         }
 
         public FunctionTreeNode Find(Problem p)
-        {            
+        {
+           
+
+            AllEvals = new HashSet<Evals>();
             SWorld world = new SWorld() { Problem = p };
             var result = Dzugaru.Search.Solver.IterativeDeepeningTreeSearch(world, p);
+            //var result = Dzugaru.Search.Solver.SimplifiedMemoryBoundAStar(world, p, 1000);
 
             FunctionTreeNode res = ((SAction)result.Last()).Next.FunctionTreeRoot;
             
 
             return res;
-        }
-
-        //public void Find(Problem p)
-        //{
-        //    this.problem = p;
-        //    Context = new EvaluationContext();
-        //    CurrentNode = new TreeOfTreesNode(new FunctionTreeNode(Context), 1);
-
-        //    for (; ; )
-        //    {
-        //        if (!Iterate()) break;
-        //    }
-        //}
-
-        //bool Iterate()
-        //{
-        //    if (CurrentNode.Size == problem.Size)
-        //    {
-        //        if (CheckProblem())
-        //        {
-        //            Console.WriteLine("Solution found! " + CurrentNode.FunctionTreeRoot.ToString());
-        //            return false;
-        //        }                
-        //    }
-
-        //    if (CurrentNode.Children == null && CurrentNode.Size < problem.Size)
-        //    {
-        //        CurrentNode.CreateChildren();
-        //        CurrentNode = CurrentNode.Children[0];
-        //    }
-        //    else if (CurrentNode.Parent == null) return false;
-        //    else
-        //    {
-        //        int childIndex = CurrentNode.Parent.Children.IndexOf(CurrentNode);
-        //        if (childIndex == CurrentNode.Parent.Children.Count - 1)
-        //        {
-        //            CurrentNode = CurrentNode.Parent;
-        //        }
-        //        else
-        //        {
-        //            CurrentNode.Children = null; //free memory
-        //            CurrentNode = CurrentNode.Parent.Children[childIndex + 1];
-        //        }
-        //    }
-
-        //    return true;
-        //}
-
-        //bool CheckProblem()
-        //{
-            
-        //}
+        }         
     }
 }

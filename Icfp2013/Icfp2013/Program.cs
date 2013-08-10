@@ -25,6 +25,7 @@ namespace Icfp2013
 
         static void Main(string[] args)
         {
+            Dzugaru.Search.Solver.IterativeDeepeningStep += () => { Searcher.AllEvals.Clear(); };
             Problem p = GetTrainProblem(12);
 
             Console.WriteLine("Got problem: " + p.ToString());
@@ -102,6 +103,7 @@ namespace Icfp2013
 
             Random rng = new Random();
             ulong[] args = Enumerable.Range(0, 256).Select(a => GetRandomUlong(rng)).ToArray();
+            //ulong[] args = GetUlongsForEval(64);
 
             var evalJObject =  new JObject(
                 new JProperty("id", resp.Id),
@@ -127,6 +129,19 @@ namespace Icfp2013
             }
 
             return pr;
+        }
+
+        static ulong[] GetUlongsForEval(int num)
+        {
+            ulong[] res = new ulong[num];
+            ulong c = 1;
+            for (int i = 0; i < num; i++)
+            {
+                res[i] = c;
+                c = c << 1;
+            }
+
+            return res;
         }
 
         static ulong GetRandomUlong(Random rng)

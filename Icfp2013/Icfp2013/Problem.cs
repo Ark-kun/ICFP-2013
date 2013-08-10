@@ -9,6 +9,11 @@ namespace Icfp2013
 {
     class Problem : IProblem
     {
+        //debug
+        static int NORGFreq = 1000;
+        int NORGCounter;
+        public int NumOfRightGuesses;
+
         EvaluationContext ctx;
 
         public string ID;
@@ -40,7 +45,10 @@ namespace Icfp2013
             for (int i = 0; i < Evals.Length; i++)
             {
                 ctx.Arg = Evals[i][0];
-                if (((TreeOfTreesNode)state).FunctionTreeRoot.Eval() != Evals[i][1]) return false;
+                if (((TreeOfTreesNode)state).FunctionTreeRoot.Eval() != Evals[i][1])
+                {                   
+                    return false;
+                }
             }
 
             return true;
