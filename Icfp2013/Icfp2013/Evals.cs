@@ -40,6 +40,11 @@ namespace Icfp2013
             return (int)MurmurHash2(source);
         }
 
+        public override string ToString()
+        {
+            return string.Join(",", Values.Select(a => a.ToString("X")).ToArray());
+        }
+
         uint MurmurHash2(byte[] source)
         {
             uint len = (uint)source.Length;

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Icfp2013.Operators;
+using System.IO;
 
 namespace Icfp2013
 {
@@ -18,6 +19,7 @@ namespace Icfp2013
         TreeOfTreesNode CurrentNode;
 
         public static HashSet<Evals> AllEvals;
+        public static StreamWriter CacheStreamWriter;
 
         public static Operators.Op[][] Ops = new Op[][] 
         {
@@ -61,10 +63,9 @@ namespace Icfp2013
 
         public FunctionTreeNode Find(Problem p)
         {
-           
-
             AllEvals = new HashSet<Evals>();
             SWorld world = new SWorld() { Problem = p };
+            //var result = Dzugaru.Search.Solver.BreadthFirstSearch(world, p);
             var result = Dzugaru.Search.Solver.IterativeDeepeningTreeSearch(world, p);
             //var result = Dzugaru.Search.Solver.SimplifiedMemoryBoundAStar(world, p, 1000);
 
@@ -72,6 +73,26 @@ namespace Icfp2013
             
 
             return res;
-        }         
+        }
+
+        public void GenerateCache()
+        {
+            for (int i = 3; i < 20; i++)
+            {
+                using (var stream = File.Open("cache" + i + ".txt", FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
+                {
+                    CacheStreamWriter = new StreamWriter(stream);
+
+                    AllEvals = new HashSet<Evals>();
+                    Problem p = new Problem() { IsCacheGenerator = true };
+                    SWorld world = new SWorld() { Problem = p };
+                    var result = Dzugaru.Search.Solver.DepthFirstTreeSearch(world, p, i);
+
+                    CacheStreamWriter.Flush();
+                    CacheStreamWriter.Close();
+                }
+            }
+           
+        }
     }
 }

@@ -22,6 +22,8 @@ namespace Icfp2013
         public string Solution;
         public HashSet<Tuple<int, int>> AllowedOperators;
 
+        public bool IsCacheGenerator;
+
         public override string ToString()
         {            
             return Solution;
@@ -42,6 +44,8 @@ namespace Icfp2013
 
         public bool IsGoalState(IState state)
         {
+            if (IsCacheGenerator) return false;
+
             for (int i = 0; i < Evals.Length; i++)
             {
                 ctx.Arg = Evals[i][0];

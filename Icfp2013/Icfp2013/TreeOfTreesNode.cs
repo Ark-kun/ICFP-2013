@@ -62,19 +62,23 @@ namespace Icfp2013
                         //}
                         //Console.WriteLine(newTreeOfTreesNode.FunctionTreeRoot);
                         //System.IO.File.AppendAllText("allguesses.txt", newTreeOfTreesNode.FunctionTreeRoot + "\r\n");
-                        var funcEvals = newTreeOfTreesNode.FunctionTreeRoot.GetFuncEvals(problem);
-                        if (!Searcher.AllEvals.Contains(funcEvals))
+
+
+                        newTreeOfTreesNode.FunctionTreeRoot.CalcFuncEvals();
+                        if (!Searcher.AllEvals.Contains(newTreeOfTreesNode.FunctionTreeRoot.CalculatedEvals))
                         {
-                            Searcher.AllEvals.Add(funcEvals);
+                            Searcher.AllEvals.Add(newTreeOfTreesNode.FunctionTreeRoot.CalculatedEvals);
                             //Console.WriteLine(newTreeOfTreesNode.FunctionTreeRoot);
-                            System.IO.File.AppendAllText("allguesses.txt", newTreeOfTreesNode.FunctionTreeRoot + "\r\n");
+                            Searcher.CacheStreamWriter.Write(newTreeOfTreesNode.FunctionTreeRoot + "\t" + newTreeOfTreesNode.HasFold + "\t" + newTreeOfTreesNode.FunctionTreeRoot.CalculatedEvals.ToString() + "\r\n");
+                           
                             yield return new SAction() { Next = newTreeOfTreesNode };
                         }
-                        else
-                        {
-                            //skip this func
-                            //Console.WriteLine(newTreeOfTreesNode.FunctionTreeRoot);
-                        }
+
+                        //else
+                        //{
+                        //    //skip this func
+                        //    //Console.WriteLine(newTreeOfTreesNode.FunctionTreeRoot);
+                        //}
                     }
                 }
             }
@@ -86,7 +90,7 @@ namespace Icfp2013
             int arity = node.Children.Count + 1;
             for (int i = 0; i < Searcher.Ops[arity].Length; i++)
             {
-                if (!problem.AllowedOperators.Contains(new Tuple<int,int>(arity, i)) ||
+                if (/*!problem.AllowedOperators.Contains(new Tuple<int,int>(arity, i)) ||*/
                     arity == 3 && HasFold && Searcher.Ops[arity][i] is Operators.Fold) continue; //only one fold allowed per function
                 result.Add(Searcher.Ops[arity][i]);
             }
@@ -156,6 +160,11 @@ namespace Icfp2013
         public bool Equals(IState other)
         {
             return ((TreeOfTreesNode)other).FunctionTreeRoot.Equals(this.FunctionTreeRoot);
+        }
+
+        public override string ToString()
+        {
+            return FunctionTreeRoot.ToString();
         }
     }
 }

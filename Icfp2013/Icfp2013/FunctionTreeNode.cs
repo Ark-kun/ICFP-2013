@@ -16,6 +16,7 @@ namespace Icfp2013
         public Operators.Op Operator;
         public FunctionTreeNode LastClonedTo;
         public bool IsInsideFoldLambda;
+        public Evals CalculatedEvals;
 
         public FunctionTreeNode(EvaluationContext ctx, FunctionTreeNode parent = null)
         {
@@ -57,6 +58,17 @@ namespace Icfp2013
             return new TreeVisualizer().Visualize(this);
         }
 
+        //TODO: bugged
+        public override bool Equals(object obj)
+        {
+            return Equals((FunctionTreeNode)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return this.ToString().GetHashCode();
+        }
+
         public bool Equals(FunctionTreeNode other)
         {            
             if (Children.Count != other.Children.Count) return false;
@@ -68,18 +80,20 @@ namespace Icfp2013
 
             return this.Operator == other.Operator; 
         }
+        //
+        
 
-        public Evals GetFuncEvals(Problem p)
+        public void CalcFuncEvals()
         {
-            int amount = 32;
+            int amount = 1024;
             Evals ev = new Evals() { Values = new ulong[amount] };
             for (int i = 0; i < amount; i++)
             {
-                Context.Arg = p.Evals[i][0];
+                Context.Arg = Program.EvalArgs[i];
                 ev.Values[i] = Eval();
             }
 
-            return ev;
+            CalculatedEvals = ev;
         }
 
         public bool IsTFold()

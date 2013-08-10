@@ -23,49 +23,55 @@ namespace Icfp2013
         static string UserID = File.ReadAllText("key.txt");
         static string RequestPath = "http://icfpc2013.cloudapp.net/{0}?auth={1}";
 
+        public static ulong[] EvalArgs;
+
         static void Main(string[] args)
         {
-            Dzugaru.Search.Solver.IterativeDeepeningStep += () => { Searcher.AllEvals.Clear(); };
-            Problem p = GetTrainProblem(12);
-
-            Console.WriteLine("Got problem: " + p.ToString());
-            File.AppendAllText("problems.txt", p.ID + "\r\n" + p.ToString());
-
-
-            Searcher s = new Searcher();
-            FunctionTreeNode result = s.Find(p);
-            if (result != null)
+            if (File.Exists("randoms.txt"))
             {
-                Console.WriteLine("Solution found! " + result + ", nodes expanded: " + Dzugaru.Search.Solver.NodesExpanded);
-
-                if (SubmitGuess(p.ID, result))
-                {
-                    Console.WriteLine("Guess accepted!!");
-                }
-
+                EvalArgs = File.ReadAllLines("randoms.txt").Select(a => ulong.Parse(a, System.Globalization.NumberStyles.HexNumber)).ToArray();
+            }
+            else
+            {
+                Random rng = new Random(3137);
+                EvalArgs = GetUlongsForEval(128).Concat(Enumerable.Range(0, 1024 - 128).Select(a => GetRandomUlong(rng))).ToArray();
+                File.WriteAllLines("randoms.txt", EvalArgs.Select(a => a.ToString("X")));
             }
 
-            //Console.WriteLine(s.VariantsCount);
 
-            //EvaluationContext ctx = new EvaluationContext();
-            //FunctionTreeNode checkFold = new FunctionTreeNode(ctx)
+
+            //string line = File.ReadAllLines("cache4.txt")[12];
+            //string[] split = line.Split('\t');
+            //ulong[] cacheResult = split[2].Split(',').Select(a => ulong.Parse(a, System.Globalization.NumberStyles.HexNumber)).ToArray();
+
+            //bool result = CheckEvalProgram(split[0], cacheResult);
+           
+            Searcher s = new Searcher();
+            s.GenerateCache();
+
+
+            //Dzugaru.Search.Solver.IterativeDeepeningStep += () => { Searcher.AllEvals.Clear(); };
+            //Problem p = GetTrainProblem(12);
+
+            //Console.WriteLine("Got problem: " + p.ToString());
+            //File.AppendAllText("problems.txt", p.ID + "\r\n" + p.ToString());
+
+
+            //Searcher s = new Searcher();
+            //FunctionTreeNode result = s.Find(p);
+            //if (result != null)
             //{
-            //    Operator = new Operators.Fold()
-            //};
+            //    Console.WriteLine("Solution found! " + result + ", nodes expanded: " + Dzugaru.Search.Solver.NodesExpanded);
 
-            //checkFold.Children.Add(new FunctionTreeNode(ctx, checkFold) { Operator = new Operators.Arg(0) });
-            //checkFold.Children.Add(new FunctionTreeNode(ctx, checkFold) { Operator = new Operators.Zero() });
+            //    if (SubmitGuess(p.ID, result))
+            //    {
+            //        Console.WriteLine("Guess accepted!!");
+            //    }
 
-            //FunctionTreeNode foldExpr = new FunctionTreeNode(ctx, checkFold) { Operator = new Operators.Or() };
-            //checkFold.Children.Add(foldExpr);
-            //foldExpr.Children.Add(new FunctionTreeNode(ctx, checkFold) { Operator = new Operators.Arg(1) });
-            //foldExpr.Children.Add(new FunctionTreeNode(ctx, checkFold) { Operator = new Operators.Arg(2) });
-
-            //Console.WriteLine("Checking fold: " + checkFold);
-            //if (CheckEvalProgram(checkFold))
-            //{
-            //    Console.WriteLine("Check success");
             //}
+
+
+           
 
             Console.ReadLine();
         }
@@ -101,13 +107,11 @@ namespace Icfp2013
             JsonSerializer ser = new JsonSerializer();
             TrainResponse resp = ser.Deserialize<TrainResponse>(reader);
 
-            Random rng = new Random();
-            ulong[] args = Enumerable.Range(0, 256).Select(a => GetRandomUlong(rng)).ToArray();
-            //ulong[] args = GetUlongsForEval(64);
+          
 
             var evalJObject =  new JObject(
                 new JProperty("id", resp.Id),
-                new JProperty("arguments", new JArray(args.Select(a => a.ToString("X")).ToArray())));
+                new JProperty("arguments", new JArray(EvalArgs.Take(256).Select(a => a.ToString("X")).ToArray())));
             reader = MakeRequest(RequestType.eval, evalJObject);
 
             JObject evalResp = (JObject)JObject.ReadFrom(reader);
@@ -125,7 +129,7 @@ namespace Icfp2013
 
             for (int i = 0; i < results.Length; i++)
             {
-                pr.Evals[i] = new[] { args[i], results[i] };
+                pr.Evals[i] = new[] { EvalArgs[i], results[i] };
             }
 
             return pr;
@@ -135,9 +139,10 @@ namespace Icfp2013
         {
             ulong[] res = new ulong[num];
             ulong c = 1;
-            for (int i = 0; i < num; i++)
+            for (int i = 0; i < num; i+=2)
             {
                 res[i] = c;
+                res[i + 1] = ~c;
                 c = c << 1;
             }
 
@@ -185,5 +190,46 @@ namespace Icfp2013
 
             return true;
         }
+
+        static bool CheckEvalProgram(string program, ulong[] cacheResults)
+        {        
+            var evalJObject = new JObject(
+               new JProperty("program", program),
+               new JProperty("arguments", new JArray(EvalArgs.Take(256).Select(a => a.ToString("X")).ToArray())));
+            JsonReader reader = MakeRequest(RequestType.eval, evalJObject);
+
+            JObject evalResp = (JObject)JObject.ReadFrom(reader);
+            ulong[] results = evalResp["outputs"].Value<JArray>().Select(a => ulong.Parse(a.Value<string>().Substring(2), System.Globalization.NumberStyles.HexNumber)).ToArray();
+
+            for (int i = 0; i < results.Length; i++)
+            {
+                if (cacheResults[i] != results[i])
+                    return false;
+            }
+
+            return true;
+        }
+
+        //Console.WriteLine(s.VariantsCount);
+
+        //EvaluationContext ctx = new EvaluationContext();
+        //FunctionTreeNode checkFold = new FunctionTreeNode(ctx)
+        //{
+        //    Operator = new Operators.Fold()
+        //};
+
+        //checkFold.Children.Add(new FunctionTreeNode(ctx, checkFold) { Operator = new Operators.Arg(0) });
+        //checkFold.Children.Add(new FunctionTreeNode(ctx, checkFold) { Operator = new Operators.Zero() });
+
+        //FunctionTreeNode foldExpr = new FunctionTreeNode(ctx, checkFold) { Operator = new Operators.Or() };
+        //checkFold.Children.Add(foldExpr);
+        //foldExpr.Children.Add(new FunctionTreeNode(ctx, checkFold) { Operator = new Operators.Arg(1) });
+        //foldExpr.Children.Add(new FunctionTreeNode(ctx, checkFold) { Operator = new Operators.Arg(2) });
+
+        //Console.WriteLine("Checking fold: " + checkFold);
+        //if (CheckEvalProgram(checkFold))
+        //{
+        //    Console.WriteLine("Check success");
+        //}
     }
 }
