@@ -9,21 +9,36 @@ namespace Icfp2013
     class TreeVisualizer
     {        
         public string Visualize(FunctionTreeNode tree)
-        {         
-            return VisualizeInternal(tree);
+        {
+            return "(lambda (x) " + VisualizeInternal(tree) + ")";
         }
 
         string VisualizeInternal(FunctionTreeNode tree)
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append(tree.Operator.ToString());            
+            if (tree.Operator.Arity > 0)
+            {
+                sb.Append("(");
+            }
+
+            sb.Append(tree.Operator.ToString().ToLowerInvariant());
+
+            if (tree.Operator.Arity > 0)
+            {
+                sb.Append(" ");
+            }
 
             if (tree.Children.Count > 0)
             {               
-                sb.Append("(" + string.Join(",", tree.Children.Select(a => VisualizeInternal(a)).ToArray()) + ")");               
+                sb.Append(string.Join(" ", tree.Children.Select(a => VisualizeInternal(a)).ToArray()));               
             }
 
-            return sb.ToString();
+            if (tree.Operator.Arity > 0)
+            {
+                sb.Append(")");
+            }
+
+            return  sb.ToString();
         }
     }
 }
