@@ -9,5 +9,6 @@ namespace Icfp2013
     class EvaluationContext
     {
         public ulong Arg;
+        public ulong FoldY, FoldZ;        
     }
 }

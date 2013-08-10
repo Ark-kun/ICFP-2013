@@ -30,7 +30,17 @@ namespace Icfp2013
 
             if (tree.Children.Count > 0)
             {               
-                sb.Append(string.Join(" ", tree.Children.Select(a => VisualizeInternal(a)).ToArray()));               
+                sb.Append(string.Join(" ", tree.Children.Select((a,i) =>
+                    {
+                        if (tree.Operator is Operators.Fold && i == 2)
+                        {
+                            return "(lambda (y z) " + VisualizeInternal(a) + ")";
+                        }
+                        else
+                        {
+                            return VisualizeInternal(a);
+                        }
+                    }).ToArray()));               
             }
 
             if (tree.Operator.Arity > 0)

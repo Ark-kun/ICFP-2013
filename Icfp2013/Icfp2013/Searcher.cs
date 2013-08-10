@@ -23,7 +23,9 @@ namespace Icfp2013
             //0
             new Zero(),
             new One(),
-            new Arg(),
+            new Arg(0),
+            new Arg(1),
+            new Arg(2)
             },
 
             new Op[]{
@@ -45,7 +47,8 @@ namespace Icfp2013
 
             new Op[]{
             //3
-            new If0()
+            new If0(),
+            new Fold()
             }
         };
 
@@ -57,7 +60,7 @@ namespace Icfp2013
         public FunctionTreeNode Find(Problem p)
         {
             SWorld world = new SWorld();
-            var result = Dzugaru.Search.Solver.BreadthFirstSearch(world, p);
+            var result = Dzugaru.Search.Solver.IterativeDeepeningTreeSearch(world, p);
 
             FunctionTreeNode res = ((SAction)result.Last()).Next.FunctionTreeRoot;
             

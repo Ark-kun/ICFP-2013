@@ -15,8 +15,7 @@ namespace Icfp2013
 
         public Operators.Op Operator;
         public FunctionTreeNode LastClonedTo;
-
-        public int IterationCurrentOp;
+        public bool IsInsideFoldLambda;
 
         public FunctionTreeNode(EvaluationContext ctx, FunctionTreeNode parent = null)
         {
@@ -26,10 +25,12 @@ namespace Icfp2013
         }
 
         public ulong Eval()
-        {
-            if (Operator is Operators.Arg)
+        {            
+            Operator.Context = Context;
+            var foldOp = Operator as Operators.Fold;
+            if (foldOp != null)
             {
-                return Context.Arg;
+                return foldOp.FoldEval(Children[0].Eval(), Children[1].Eval(), Children[2]);
             }
             else
             {

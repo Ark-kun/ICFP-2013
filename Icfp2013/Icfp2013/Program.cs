@@ -25,7 +25,7 @@ namespace Icfp2013
 
         static void Main(string[] args)
         {
-            Problem p = GetTrainProblem(7);
+            Problem p = GetTrainProblem(8);
 
             Console.WriteLine("Got problem: " + p.ToString());
 
@@ -44,6 +44,26 @@ namespace Icfp2013
             }
 
             //Console.WriteLine(s.VariantsCount);
+
+            //EvaluationContext ctx = new EvaluationContext();
+            //FunctionTreeNode checkFold = new FunctionTreeNode(ctx)
+            //{
+            //    Operator = new Operators.Fold()
+            //};
+
+            //checkFold.Children.Add(new FunctionTreeNode(ctx, checkFold) { Operator = new Operators.Arg(0) });
+            //checkFold.Children.Add(new FunctionTreeNode(ctx, checkFold) { Operator = new Operators.Zero() });
+
+            //FunctionTreeNode foldExpr = new FunctionTreeNode(ctx, checkFold) { Operator = new Operators.Or() };
+            //checkFold.Children.Add(foldExpr);
+            //foldExpr.Children.Add(new FunctionTreeNode(ctx, checkFold) { Operator = new Operators.Arg(1) });
+            //foldExpr.Children.Add(new FunctionTreeNode(ctx, checkFold) { Operator = new Operators.Arg(2) });
+
+            //Console.WriteLine("Checking fold: " + checkFold);
+            //if (CheckEvalProgram(checkFold))
+            //{
+            //    Console.WriteLine("Check success");
+            //}
 
             Console.ReadLine();
         }
@@ -75,7 +95,7 @@ namespace Icfp2013
 
         static Problem GetTrainProblem(int size)
         {
-            JsonReader reader = MakeRequest(RequestType.train, new JObject(new JProperty("size", size + 1), new JProperty("operators", new JArray())));
+            JsonReader reader = MakeRequest(RequestType.train, new JObject(new JProperty("size", size + 1), new JProperty("operators", new JArray("tfold"))));
             JsonSerializer ser = new JsonSerializer();
             TrainResponse resp = ser.Deserialize<TrainResponse>(reader);
 
@@ -122,6 +142,30 @@ namespace Icfp2013
             JObject result = (JObject)JObject.ReadFrom(reader);
 
             return result["status"].Value<string>() == "win";
+        }
+
+        static bool CheckEvalProgram(FunctionTreeNode func)
+        {
+            Random rng = new Random();
+            ulong[] args = Enumerable.Range(0, 256).Select(a => GetRandomUlong(rng)).ToArray();
+
+            var evalJObject = new JObject(
+               new JProperty("program", func.ToString()),
+               new JProperty("arguments", new JArray(args.Select(a => a.ToString("X")).ToArray())));
+            JsonReader reader = MakeRequest(RequestType.eval, evalJObject);
+
+            JObject evalResp = (JObject)JObject.ReadFrom(reader);
+            ulong[] results = evalResp["outputs"].Value<JArray>().Select(a => ulong.Parse(a.Value<string>().Substring(2), System.Globalization.NumberStyles.HexNumber)).ToArray();
+
+            for (int i = 0; i < results.Length; i++)
+            {
+                func.Context.Arg = args[i];
+                ulong funcEval = func.Eval();
+                if (funcEval != results[i]) 
+                    return false;
+            }
+
+            return true;
         }
     }
 }

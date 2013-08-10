@@ -8,6 +8,7 @@ namespace Icfp2013.Operators
 {
     interface Op
     {
+        EvaluationContext Context { set; }        
         int Arity { get; }
         ulong Eval(params ulong[] arg);
     }
@@ -15,20 +16,37 @@ namespace Icfp2013.Operators
     //Nullary
     class Arg : Op
     {
+        public EvaluationContext Context { get; set; }     
+        static string[] Letters = new[] { "x", "y", "z" };
+
+        public int ArgIndex;
         public int Arity { get { return 0; } }
-        public ulong Eval(ulong[] arg)
+        public ulong Eval(ulong[] args)
         {
-            return arg[0];
-        }
+            switch (ArgIndex)
+            {
+                case 0: return Context.Arg;
+                case 1: return Context.FoldY;
+                case 2: return Context.FoldZ;
+                default: throw new Exception("WTF");
+            }
+        }        
 
         public override string ToString()
         {
-            return "x";
+            return Letters[ArgIndex];
         }
+
+        public Arg(int i)
+        {
+            ArgIndex = i;
+        }          
     }
+    
 
     class Zero : Op
     {
+        public EvaluationContext Context { get; set; }  
         public int Arity { get { return 0; } }
         public ulong Eval(ulong[] arg)
         {
@@ -43,6 +61,7 @@ namespace Icfp2013.Operators
 
     class One : Op
     {
+        public EvaluationContext Context { get; set; }  
         public int Arity { get { return 0; } }
         public ulong Eval(ulong[] arg)
         {
@@ -58,6 +77,7 @@ namespace Icfp2013.Operators
     //Unary
     class Shl1 : Op
     {
+        public EvaluationContext Context { get; set; }  
         public int Arity { get { return 1; } }
         public ulong Eval(ulong[] arg)
         {
@@ -72,6 +92,7 @@ namespace Icfp2013.Operators
 
     class Shr1 : Op
     {
+        public EvaluationContext Context { get; set; }  
         public int Arity { get { return 1; } }
         public ulong Eval(ulong[] arg)
         {
@@ -86,6 +107,7 @@ namespace Icfp2013.Operators
 
     class Shr4 : Op
     {
+        public EvaluationContext Context { get; set; }  
         public int Arity { get { return 1; } }
         public ulong Eval(ulong[] arg)
         {
@@ -100,6 +122,7 @@ namespace Icfp2013.Operators
 
     class Shr16 : Op
     {
+        public EvaluationContext Context { get; set; }  
         public int Arity { get { return 1; } }
         public ulong Eval(ulong[] arg)
         {
@@ -114,6 +137,7 @@ namespace Icfp2013.Operators
 
     class Not : Op
     {
+        public EvaluationContext Context { get; set; }  
         public int Arity { get { return 1; } }
         public ulong Eval(ulong[] arg)
         {
@@ -129,6 +153,7 @@ namespace Icfp2013.Operators
     //Binary
     class And : Op
     {
+        public EvaluationContext Context { get; set; }  
         public int Arity { get { return 2; } }
         public ulong Eval(ulong[] arg)
         {
@@ -143,6 +168,7 @@ namespace Icfp2013.Operators
 
     class Or : Op
     {
+        public EvaluationContext Context { get; set; }  
         public int Arity { get { return 2; } }
         public ulong Eval(ulong[] arg)
         {
@@ -157,6 +183,7 @@ namespace Icfp2013.Operators
 
     class Xor : Op
     {
+        public EvaluationContext Context { get; set; }  
         public int Arity { get { return 2; } }
         public ulong Eval(ulong[] arg)
         {
@@ -171,6 +198,7 @@ namespace Icfp2013.Operators
 
     class Plus : Op
     {
+        public EvaluationContext Context { get; set; }  
         public int Arity { get { return 2; } }
         public ulong Eval(ulong[] arg)
         {
@@ -186,6 +214,7 @@ namespace Icfp2013.Operators
     //Ternary
     class If0 : Op
     {
+        public EvaluationContext Context { get; set; }  
         public int Arity { get { return 3; } }
         public ulong Eval(ulong[] arg)
         {
@@ -195,6 +224,34 @@ namespace Icfp2013.Operators
         public override string ToString()
         {
             return "If0";
+        }
+    }
+
+    class Fold : Op
+    {
+        public EvaluationContext Context { get; set; }  
+        public int Arity { get { return 3; } }
+        public ulong Eval(ulong[] arg)
+        {
+            throw new Exception("Can't eval");
+        }
+
+        public ulong FoldEval(ulong y, ulong z, FunctionTreeNode func)
+        {
+            Context.FoldZ = z;
+            for (int i = 0; i < 8; i++)
+            {
+                ulong b = (y >> i * 8) & 0xFF;
+                Context.FoldY = b;
+                Context.FoldZ = func.Eval();
+            }
+
+            return Context.FoldZ;
+        }
+
+        public override string ToString()
+        {
+            return "Fold";
         }
     }
 }

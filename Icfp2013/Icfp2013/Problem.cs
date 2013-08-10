@@ -15,6 +15,7 @@ namespace Icfp2013
         public int Size;
         public ulong[][] Evals;
         public string Solution;
+        public List<Tuple<int, int>> AllowedOperators;
 
         public override string ToString()
         {            
