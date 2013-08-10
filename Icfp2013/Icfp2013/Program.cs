@@ -25,13 +25,23 @@ namespace Icfp2013
 
         static void Main(string[] args)
         {
-            Problem p = GetTrainProblem(5);
+            Problem p = GetTrainProblem(7);
 
             Console.WriteLine("Got problem: " + p.ToString());
 
 
             Searcher s = new Searcher();
-            s.Find(p);
+            FunctionTreeNode result = s.Find(p);
+            if (result != null)
+            {
+                Console.WriteLine("Solution found! " + result + ", nodes expanded: " + Dzugaru.Search.Solver.NodesExpanded);
+
+                if (SubmitGuess(p.ID, result))
+                {
+                    Console.WriteLine("Guess accepted!!");
+                }
+
+            }
 
             //Console.WriteLine(s.VariantsCount);
 
@@ -50,22 +60,27 @@ namespace Icfp2013
                 JsonWriter writer = new JsonTextWriter(new StreamWriter(reqStream));               
                 parameters.WriteTo(writer);
                 writer.Flush();
-                reqStream.Close();    
+                reqStream.Close();
+                reqStream.Dispose();
             }
 
-            WebResponse response = req.GetResponse();
-            
-            return new JsonTextReader(new StreamReader(response.GetResponseStream()));
+            using (WebResponse response = req.GetResponse())
+            {
+                MemoryStream stream = new MemoryStream();
+                response.GetResponseStream().CopyTo(stream);
+                stream.Position = 0;
+                return new JsonTextReader(new StreamReader(stream));
+            }
         }
 
         static Problem GetTrainProblem(int size)
         {
-            JsonReader reader = MakeRequest(RequestType.train, new JObject(new JProperty("size", size + 1)));
+            JsonReader reader = MakeRequest(RequestType.train, new JObject(new JProperty("size", size + 1), new JProperty("operators", new JArray())));
             JsonSerializer ser = new JsonSerializer();
             TrainResponse resp = ser.Deserialize<TrainResponse>(reader);
 
             Random rng = new Random();
-            ulong[] args = Enumerable.Range(0, 10).Select(a => GetRandomUlong(rng)).ToArray();
+            ulong[] args = Enumerable.Range(0, 256).Select(a => GetRandomUlong(rng)).ToArray();
 
             var evalJObject =  new JObject(
                 new JProperty("id", resp.Id),
@@ -77,6 +92,7 @@ namespace Icfp2013
 
             Problem pr = new Problem()
                 {
+                    ID = resp.Id,
                     Size = size,
                     Evals = new ulong[results.Length][],
                     Solution = resp.Program
@@ -95,6 +111,17 @@ namespace Icfp2013
             byte[] buf = new byte[8];
             rng.NextBytes(buf);
             return BitConverter.ToUInt64(buf, 0);
+        }
+
+        static bool SubmitGuess(string id, FunctionTreeNode node)
+        {
+            JsonReader reader = MakeRequest(RequestType.guess, 
+                new JObject(new JProperty("id", id), 
+                new JProperty("program", node.ToString())));
+
+            JObject result = (JObject)JObject.ReadFrom(reader);
+
+            return result["status"].Value<string>() == "win";
         }
     }
 }

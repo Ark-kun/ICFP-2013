@@ -3,36 +3,34 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Dzugaru.Search;
 
 namespace Icfp2013
 {
-    class TreeOfTreesNode
+    class TreeOfTreesNode : IState
     {
         static int MaxArity = 3;
 
         public int Size;
         public FunctionTreeNode FunctionTreeRoot;
-        public List<TreeOfTreesNode> Children;
-        public TreeOfTreesNode Parent;
+        //public List<TreeOfTreesNode> Children;
+        //public TreeOfTreesNode Parent;
 
         public TreeOfTreesNode(FunctionTreeNode root, int size, TreeOfTreesNode parent = null)
         {
             this.FunctionTreeRoot = root;
             this.Size = size;
-            this.Parent = parent;
+            //this.Parent = parent;
         }
 
-        public void CreateChildren()
-        {
-            Children = new List<TreeOfTreesNode>();
-            AddChildrenForNode(FunctionTreeRoot);
-        }
-
-        void AddChildrenForNode(FunctionTreeNode node)
+        public IEnumerable<IAction> GetNext(FunctionTreeNode node)
         {
             foreach (var ch in node.Children)
             {
-                AddChildrenForNode(ch);
+                foreach (var a in GetNext(ch))
+                {
+                    yield return a;
+                }
             }
 
             if (node.Children.Count < MaxArity)
@@ -42,12 +40,45 @@ namespace Icfp2013
                     for (int j = 0; j < Searcher.Ops[node.Children.Count + 1].Length; j++)
                     {
                         FunctionTreeNode clone = FunctionTreeRoot.Clone();
-                        node.LastClonedTo.Children.Add(new FunctionTreeNode(clone.Context, node.LastClonedTo) { Operator = Searcher.Ops[0][i]() });
-                        node.LastClonedTo.Operator = Searcher.Ops[node.Children.Count + 1][j]();
-                        Children.Add(new TreeOfTreesNode(clone, this.Size + 1, this));
+                        node.LastClonedTo.Children.Add(new FunctionTreeNode(clone.Context, node.LastClonedTo) { Operator = Searcher.Ops[0][i] });
+                        node.LastClonedTo.Operator = Searcher.Ops[node.Children.Count + 1][j];
+                        yield return new SAction() { Next = new TreeOfTreesNode(clone, this.Size + 1, this) };
                     }
                 }
             }
+        }
+
+        //public void CreateChildren()
+        //{
+        //    Children = new List<TreeOfTreesNode>();
+        //    AddChildrenForNode(FunctionTreeRoot);
+        //}
+
+        //void AddChildrenForNode(FunctionTreeNode node)
+        //{
+        //    foreach (var ch in node.Children)
+        //    {
+        //        AddChildrenForNode(ch);
+        //    }
+
+        //    if (node.Children.Count < MaxArity)
+        //    {
+        //        for (int i = 0; i < Searcher.Ops[0].Length; i++)
+        //        {
+        //            for (int j = 0; j < Searcher.Ops[node.Children.Count + 1].Length; j++)
+        //            {
+        //                FunctionTreeNode clone = FunctionTreeRoot.Clone();
+        //                node.LastClonedTo.Children.Add(new FunctionTreeNode(clone.Context, node.LastClonedTo) { Operator = Searcher.Ops[0][i] });
+        //                node.LastClonedTo.Operator = Searcher.Ops[node.Children.Count + 1][j];
+        //                Children.Add(new TreeOfTreesNode(clone, this.Size + 1, this));
+        //            }
+        //        }
+        //    }
+        //}
+
+        public bool Equals(IState other)
+        {
+            return ((TreeOfTreesNode)other).FunctionTreeRoot.Equals(this.FunctionTreeRoot);
         }
     }
 }

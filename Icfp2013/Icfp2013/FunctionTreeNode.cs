@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Icfp2013
 {
-    class FunctionTreeNode
+    class FunctionTreeNode : IEquatable<FunctionTreeNode>
     {        
         public EvaluationContext Context;
 
@@ -54,6 +54,18 @@ namespace Icfp2013
         public override string ToString()
         {
             return new TreeVisualizer().Visualize(this);
+        }
+
+        public bool Equals(FunctionTreeNode other)
+        {
+            if (Children.Count != other.Children.Count) return false;
+
+            for (int i = 0; i < Children.Count; i++)
+			{
+			    if(!Children[i].Equals(other.Children[i])) return false;
+			}
+
+            return this.Operator == other.Operator; 
         }
     }
 }

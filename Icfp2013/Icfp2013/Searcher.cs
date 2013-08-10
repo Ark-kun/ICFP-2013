@@ -17,101 +17,103 @@ namespace Icfp2013
         EvaluationContext Context;
         TreeOfTreesNode CurrentNode; 
 
-        public static Func<Operators.Op>[][] Ops = new Func<Op>[][] 
+        public static Operators.Op[][] Ops = new Op[][] 
         {
-            new Func<Op>[]{
+            new Op[]{
             //0
-            () => new Zero(),
-            () => new One(),
-            () => new Arg(),
+            new Zero(),
+            new One(),
+            new Arg(),
             },
 
-            new Func<Op>[]{
+            new Op[]{
             //1
-            () => new Not(),
-            () => new Shl1(),
-            () => new Shr1(),
-            () => new Shr4(),
-            () => new Shr16()
+            new Not(),
+            new Shl1(),
+            new Shr1(),
+            new Shr4(),
+            new Shr16()
             },
 
-            new Func<Op>[]{
+            new Op[]{
             //2
-            () => new And(),
-            () => new Or(),
-            () => new Plus(),
-            () => new Xor(),
+            new And(),
+            new Or(),
+            new Plus(),
+            new Xor(),
             },
 
-            new Func<Op>[]{
+            new Op[]{
             //3
-            () => new If0()
+            new If0()
             }
         };
 
         public Searcher()
         {
-           
-            
-
             //RootNode = CurrentNode = new FunctionTreeNode(Context);                     
         }
 
-        public void Find(Problem p)
+        public FunctionTreeNode Find(Problem p)
         {
-            this.problem = p;
-            Context = new EvaluationContext();
-            CurrentNode = new TreeOfTreesNode(new FunctionTreeNode(Context), 1);
+            SWorld world = new SWorld();
+            var result = Dzugaru.Search.Solver.BreadthFirstSearch(world, p);
 
-            for (; ; )
-            {
-                if (!Iterate()) break;
-            }
+            FunctionTreeNode res = ((SAction)result.Last()).Next.FunctionTreeRoot;
+            
+
+            return res;
         }
 
-        bool Iterate()
-        {
-            if (CurrentNode.Size == problem.Size)
-            {
-                if (CheckProblem())
-                {
-                    Console.WriteLine("Solution found! " + CurrentNode.FunctionTreeRoot.ToString());
-                    return false;
-                }                
-            }
+        //public void Find(Problem p)
+        //{
+        //    this.problem = p;
+        //    Context = new EvaluationContext();
+        //    CurrentNode = new TreeOfTreesNode(new FunctionTreeNode(Context), 1);
 
-            if (CurrentNode.Children == null && CurrentNode.Size < problem.Size)
-            {
-                CurrentNode.CreateChildren();
-                CurrentNode = CurrentNode.Children[0];
-            }
-            else if (CurrentNode.Parent == null) return false;
-            else
-            {
-                int childIndex = CurrentNode.Parent.Children.IndexOf(CurrentNode);
-                if (childIndex == CurrentNode.Parent.Children.Count - 1)
-                {
-                    CurrentNode = CurrentNode.Parent;
-                }
-                else
-                {
-                    CurrentNode.Children = null; //free memory
-                    CurrentNode = CurrentNode.Parent.Children[childIndex + 1];
-                }
-            }
+        //    for (; ; )
+        //    {
+        //        if (!Iterate()) break;
+        //    }
+        //}
 
-            return true;
-        }
+        //bool Iterate()
+        //{
+        //    if (CurrentNode.Size == problem.Size)
+        //    {
+        //        if (CheckProblem())
+        //        {
+        //            Console.WriteLine("Solution found! " + CurrentNode.FunctionTreeRoot.ToString());
+        //            return false;
+        //        }                
+        //    }
 
-        bool CheckProblem()
-        {
-            for (int i = 0; i < problem.Evals.Length; i++)
-            {
-                Context.Arg = problem.Evals[i][0];
-                if (CurrentNode.FunctionTreeRoot.Eval() != problem.Evals[i][1]) return false;
-            }
+        //    if (CurrentNode.Children == null && CurrentNode.Size < problem.Size)
+        //    {
+        //        CurrentNode.CreateChildren();
+        //        CurrentNode = CurrentNode.Children[0];
+        //    }
+        //    else if (CurrentNode.Parent == null) return false;
+        //    else
+        //    {
+        //        int childIndex = CurrentNode.Parent.Children.IndexOf(CurrentNode);
+        //        if (childIndex == CurrentNode.Parent.Children.Count - 1)
+        //        {
+        //            CurrentNode = CurrentNode.Parent;
+        //        }
+        //        else
+        //        {
+        //            CurrentNode.Children = null; //free memory
+        //            CurrentNode = CurrentNode.Parent.Children[childIndex + 1];
+        //        }
+        //    }
 
-            return true;
-        }
+        //    return true;
+        //}
+
+        //bool CheckProblem()
+        //{
+            
+        //}
     }
 }
