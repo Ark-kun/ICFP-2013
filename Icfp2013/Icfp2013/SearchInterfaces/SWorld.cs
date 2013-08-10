@@ -9,6 +9,8 @@ namespace Icfp2013
 {
     class SWorld : IWorld
     {
+        public Problem Problem;
+
         public IState GetActionResult(IState state, IAction action)
         {
             return ((SAction)action).Next;
@@ -17,7 +19,7 @@ namespace Icfp2013
         public IEnumerable<IAction> GetActionsInState(IState state)
         {
             TreeOfTreesNode node = (TreeOfTreesNode)state;
-            return node.GetNext(node.FunctionTreeRoot);
+            return node.GetNext(node.FunctionTreeRoot, Problem);
         }
 
         public double GetHeuristic(IState state, IProblem problem)

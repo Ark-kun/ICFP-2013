@@ -25,11 +25,11 @@ namespace Icfp2013
             //this.Parent = parent;
         }
 
-        public IEnumerable<IAction> GetNext(FunctionTreeNode node)
+        public IEnumerable<IAction> GetNext(FunctionTreeNode node, Problem problem)
         {
             foreach (var ch in node.Children)
             {
-                foreach (var a in GetNext(ch))
+                foreach (var a in GetNext(ch, problem))
                 {
                     yield return a;
                 }
@@ -37,9 +37,9 @@ namespace Icfp2013
 
             if (node.Children.Count < MaxArity)
             {
-                foreach(var upperOp in GetAllowedOpsUpper(node))
+                foreach(var upperOp in GetAllowedOpsUpper(node, problem))
                 {
-                    foreach(var lowerOp in GetAllowedOpsLower(node, upperOp))
+                    foreach(var lowerOp in GetAllowedOpsLower(node, upperOp, problem))
                     {
                         FunctionTreeNode clone = FunctionTreeRoot.Clone();
                         var newNode = new FunctionTreeNode(clone.Context, node.LastClonedTo) { Operator = lowerOp, IsInsideFoldLambda = node.LastClonedTo.IsInsideFoldLambda };
@@ -56,24 +56,30 @@ namespace Icfp2013
                             }
                         }
 
+                        //if (newTreeOfTreesNode.FunctionTreeRoot.IsTFold())
+                        //{
+                        //    System.IO.File.AppendAllText("Tfolds.txt", newTreeOfTreesNode.FunctionTreeRoot + "\r\n");
+                        //}
                         //Console.WriteLine(newTreeOfTreesNode.FunctionTreeRoot);
+                        //System.IO.File.AppendAllText("allguesses.txt", newTreeOfTreesNode.FunctionTreeRoot + "\r\n");
                         yield return new SAction() { Next = newTreeOfTreesNode };
                     }
                 }
             }
         }
 
-        public IEnumerable<Operators.Op> GetAllowedOpsUpper(FunctionTreeNode node)
+        public IEnumerable<Operators.Op> GetAllowedOpsUpper(FunctionTreeNode node, Problem problem)
         {
             int arity = node.Children.Count + 1;
             for (int i = 0; i < Searcher.Ops[arity].Length; i++)
             {
-                if (arity == 3 && HasFold && Searcher.Ops[arity][i] is Operators.Fold) continue; //only one fold allowed per function
+                if (!problem.AllowedOperators.Contains(new Tuple<int,int>(arity, i)) ||
+                    arity == 3 && HasFold && Searcher.Ops[arity][i] is Operators.Fold) continue; //only one fold allowed per function
                 yield return Searcher.Ops[arity][i];
             }
         }
 
-        public IEnumerable<Operators.Op> GetAllowedOpsLower(FunctionTreeNode node, Operators.Op upperOp)
+        public IEnumerable<Operators.Op> GetAllowedOpsLower(FunctionTreeNode node, Operators.Op upperOp, Problem problem)
         {           
             for (int i = 0; i < Searcher.Ops[0].Length; i++)
             {

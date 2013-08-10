@@ -25,9 +25,10 @@ namespace Icfp2013
 
         static void Main(string[] args)
         {
-            Problem p = GetTrainProblem(8);
+            Problem p = GetTrainProblem(12);
 
             Console.WriteLine("Got problem: " + p.ToString());
+            File.AppendAllText("problems.txt", p.ID + "\r\n" + p.ToString());
 
 
             Searcher s = new Searcher();
@@ -95,7 +96,7 @@ namespace Icfp2013
 
         static Problem GetTrainProblem(int size)
         {
-            JsonReader reader = MakeRequest(RequestType.train, new JObject(new JProperty("size", size + 1), new JProperty("operators", new JArray("tfold"))));
+            JsonReader reader = MakeRequest(RequestType.train, new JObject(new JProperty("size", size + 1), new JProperty("operators", new JArray("fold"))));
             JsonSerializer ser = new JsonSerializer();
             TrainResponse resp = ser.Deserialize<TrainResponse>(reader);
 
@@ -117,6 +118,8 @@ namespace Icfp2013
                     Evals = new ulong[results.Length][],
                     Solution = resp.Program
                 };
+
+            pr.SetAllowedOperators(resp.Operators);
 
             for (int i = 0; i < results.Length; i++)
             {

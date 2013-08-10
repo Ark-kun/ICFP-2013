@@ -58,8 +58,8 @@ namespace Icfp2013
         }
 
         public FunctionTreeNode Find(Problem p)
-        {
-            SWorld world = new SWorld();
+        {            
+            SWorld world = new SWorld() { Problem = p };
             var result = Dzugaru.Search.Solver.IterativeDeepeningTreeSearch(world, p);
 
             FunctionTreeNode res = ((SAction)result.Last()).Next.FunctionTreeRoot;

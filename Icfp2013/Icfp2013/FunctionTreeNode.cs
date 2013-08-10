@@ -41,12 +41,12 @@ namespace Icfp2013
         public int GetSize()
         {
             //TODO: exceptions like fold?
-            return 1 + Children.Sum(c => c.GetSize());
+            return (Operator is Operators.Fold ? 2 : 1) + Children.Sum(c => c.GetSize());
         }
 
         public FunctionTreeNode Clone()
         {
-            var clone = new FunctionTreeNode(Context, Parent) { Operator = this.Operator };
+            var clone = new FunctionTreeNode(Context, Parent) { Operator = this.Operator, IsInsideFoldLambda = this.IsInsideFoldLambda };
             this.LastClonedTo = clone;
             clone.Children = this.Children.Select(ch => ch.Clone()).ToList();
             return clone;
@@ -67,6 +67,11 @@ namespace Icfp2013
 			}
 
             return this.Operator == other.Operator; 
+        }
+
+        public bool IsTFold()
+        {
+            return this.Operator is Operators.Fold && this.Children[0].Operator is Operators.Arg && this.Children[1].Operator is Operators.Zero;
         }
     }
 }

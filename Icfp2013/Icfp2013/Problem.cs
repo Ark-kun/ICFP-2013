@@ -15,7 +15,7 @@ namespace Icfp2013
         public int Size;
         public ulong[][] Evals;
         public string Solution;
-        public List<Tuple<int, int>> AllowedOperators;
+        public HashSet<Tuple<int, int>> AllowedOperators;
 
         public override string ToString()
         {            
@@ -44,6 +44,22 @@ namespace Icfp2013
             }
 
             return true;
+        }
+
+        public void SetAllowedOperators(string[] ops)
+        {
+            AllowedOperators = new HashSet<Tuple<int, int>>();
+            for (int a = 1; a <=3; a++)
+            {
+                for (int j = 0; j < Searcher.Ops[a].Length; j++)
+                {
+                    string sopString = Searcher.Ops[a][j].ToString().ToLowerInvariant();
+                    if (ops.Contains(sopString) || ops.Contains("tfold") && sopString == "fold")
+                    {
+                        AllowedOperators.Add(new Tuple<int, int>(a, j));
+                    }
+                }
+            }
         }
     }
 }
