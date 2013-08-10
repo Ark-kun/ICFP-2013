@@ -9,7 +9,10 @@ namespace Icfp2013
 {
     class Searcher
     {
-        int depthLimit;
+        //debug
+        public int VariantsCount;
+
+        Problem problem;
 
         EvaluationContext Context;
         TreeOfTreesNode CurrentNode; 
@@ -46,18 +49,20 @@ namespace Icfp2013
             }
         };
 
-        public Searcher(int depthLimit)
+        public Searcher()
         {
-            this.depthLimit = depthLimit;
-            Context = new EvaluationContext();
-            CurrentNode = new TreeOfTreesNode(new FunctionTreeNode(Context), 1);
+           
             
 
             //RootNode = CurrentNode = new FunctionTreeNode(Context);                     
         }
 
-        public void Find()
+        public void Find(Problem p)
         {
+            this.problem = p;
+            Context = new EvaluationContext();
+            CurrentNode = new TreeOfTreesNode(new FunctionTreeNode(Context), 1);
+
             for (; ; )
             {
                 if (!Iterate()) break;
@@ -66,13 +71,16 @@ namespace Icfp2013
 
         bool Iterate()
         {
-            if (CurrentNode.Size == depthLimit)
+            if (CurrentNode.Size == problem.Size)
             {
-                Console.WriteLine(CurrentNode.FunctionTreeRoot);
-                //Search all operator combinations
+                if (CheckProblem())
+                {
+                    Console.WriteLine("Solution found! " + CurrentNode.FunctionTreeRoot.ToString());
+                    return false;
+                }                
             }
 
-            if (CurrentNode.Children == null && CurrentNode.Size < depthLimit)
+            if (CurrentNode.Children == null && CurrentNode.Size < problem.Size)
             {
                 CurrentNode.CreateChildren();
                 CurrentNode = CurrentNode.Children[0];
@@ -95,11 +103,15 @@ namespace Icfp2013
             return true;
         }
 
-        void FindOps(FunctionTreeNode root)
+        bool CheckProblem()
         {
-            FunctionTreeNode currentNode = root;
+            for (int i = 0; i < problem.Evals.Length; i++)
+            {
+                Context.Arg = problem.Evals[i][0];
+                if (CurrentNode.FunctionTreeRoot.Eval() != problem.Evals[i][1]) return false;
+            }
 
-           
+            return true;
         }
     }
 }

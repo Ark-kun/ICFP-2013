@@ -25,14 +25,15 @@ namespace Icfp2013
 
         static void Main(string[] args)
         {
-            //JsonReader reader = MakeRequest(RequestType.train, new JObject(new JProperty("size", 4)));
+            Problem p = GetTrainProblem(5);
+
+            Console.WriteLine("Got problem: " + p.ToString());
 
 
-            //JsonSerializer ser = new JsonSerializer();
-            //TrainResponse resp = ser.Deserialize<TrainResponse>(reader);
+            Searcher s = new Searcher();
+            s.Find(p);
 
-            Searcher s = new Searcher(3);
-            s.Find();
+            //Console.WriteLine(s.VariantsCount);
 
             Console.ReadLine();
         }
@@ -55,6 +56,45 @@ namespace Icfp2013
             WebResponse response = req.GetResponse();
             
             return new JsonTextReader(new StreamReader(response.GetResponseStream()));
+        }
+
+        static Problem GetTrainProblem(int size)
+        {
+            JsonReader reader = MakeRequest(RequestType.train, new JObject(new JProperty("size", size + 1)));
+            JsonSerializer ser = new JsonSerializer();
+            TrainResponse resp = ser.Deserialize<TrainResponse>(reader);
+
+            Random rng = new Random();
+            ulong[] args = Enumerable.Range(0, 10).Select(a => GetRandomUlong(rng)).ToArray();
+
+            var evalJObject =  new JObject(
+                new JProperty("id", resp.Id),
+                new JProperty("arguments", new JArray(args.Select(a => a.ToString("X")).ToArray())));
+            reader = MakeRequest(RequestType.eval, evalJObject);
+
+            JObject evalResp = (JObject)JObject.ReadFrom(reader);
+            ulong[] results = evalResp["outputs"].Value<JArray>().Select(a => ulong.Parse(a.Value<string>().Substring(2), System.Globalization.NumberStyles.HexNumber)).ToArray();
+
+            Problem pr = new Problem()
+                {
+                    Size = size,
+                    Evals = new ulong[results.Length][],
+                    Solution = resp.Program
+                };
+
+            for (int i = 0; i < results.Length; i++)
+            {
+                pr.Evals[i] = new[] { args[i], results[i] };
+            }
+
+            return pr;
+        }
+
+        static ulong GetRandomUlong(Random rng)
+        {
+            byte[] buf = new byte[8];
+            rng.NextBytes(buf);
+            return BitConverter.ToUInt64(buf, 0);
         }
     }
 }

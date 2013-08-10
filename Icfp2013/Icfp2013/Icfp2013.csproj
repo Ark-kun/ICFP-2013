@@ -44,6 +44,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Problem.cs" />
     <Compile Include="Searcher.cs" />
     <Compile Include="EvaluationContext.cs" />
     <Compile Include="FunctionTreeNode.cs" />
