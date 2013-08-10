@@ -7,21 +7,16 @@ using System.Threading.Tasks;
 namespace Icfp2013
 {
     class TreeVisualizer
-    {
-        int currentId;
-
+    {        
         public string Visualize(FunctionTreeNode tree)
-        {
-            currentId = 0;
-
+        {         
             return VisualizeInternal(tree);
         }
 
         string VisualizeInternal(FunctionTreeNode tree)
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append(currentId.ToString());
-            currentId++;
+            sb.Append(tree.Operator.ToString());            
 
             if (tree.Children.Count > 0)
             {               

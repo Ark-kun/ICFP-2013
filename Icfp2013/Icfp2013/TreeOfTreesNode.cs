@@ -37,9 +37,16 @@ namespace Icfp2013
 
             if (node.Children.Count < MaxArity)
             {
-                FunctionTreeNode clone = FunctionTreeRoot.Clone();
-                node.LastClonedTo.Children.Add(new FunctionTreeNode(clone.Context, node.LastClonedTo));
-                Children.Add(new TreeOfTreesNode(clone, this.Size + 1, this));
+                for (int i = 0; i < Searcher.Ops[0].Length; i++)
+                {
+                    for (int j = 0; j < Searcher.Ops[node.Children.Count + 1].Length; j++)
+                    {
+                        FunctionTreeNode clone = FunctionTreeRoot.Clone();
+                        node.LastClonedTo.Children.Add(new FunctionTreeNode(clone.Context, node.LastClonedTo) { Operator = Searcher.Ops[0][i]() });
+                        node.LastClonedTo.Operator = Searcher.Ops[node.Children.Count + 1][j]();
+                        Children.Add(new TreeOfTreesNode(clone, this.Size + 1, this));
+                    }
+                }
             }
         }
     }

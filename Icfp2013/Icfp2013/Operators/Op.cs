@@ -20,6 +20,11 @@ namespace Icfp2013.Operators
         {
             return arg[0];
         }
+
+        public override string ToString()
+        {
+            return "x";
+        }
     }
 
     class Zero : Op
@@ -29,6 +34,11 @@ namespace Icfp2013.Operators
         {
             return 0;
         }
+
+        public override string ToString()
+        {
+            return "0";
+        }
     }
 
     class One : Op
@@ -37,6 +47,11 @@ namespace Icfp2013.Operators
         public ulong Eval(ulong[] arg)
         {
             return 1;
+        }
+
+        public override string ToString()
+        {
+            return "1";
         }
     }
 
@@ -48,6 +63,11 @@ namespace Icfp2013.Operators
         {
             return arg[0] << 1;
         }
+
+        public override string ToString()
+        {
+            return "Shl1";
+        }
     }
 
     class Shr1 : Op
@@ -56,6 +76,11 @@ namespace Icfp2013.Operators
         public ulong Eval(ulong[] arg)
         {
             return arg[0] >> 1;
+        }
+
+        public override string ToString()
+        {
+            return "Shr1";
         }
     }
 
@@ -66,6 +91,11 @@ namespace Icfp2013.Operators
         {
             return arg[0] >> 4;
         }
+
+        public override string ToString()
+        {
+            return "Shr4";
+        }
     }
 
     class Shr16 : Op
@@ -75,6 +105,11 @@ namespace Icfp2013.Operators
         {
             return arg[0] >> 16;
         }
+
+        public override string ToString()
+        {
+            return "Shr16";
+        }
     }
 
     class Not : Op
@@ -83,6 +118,11 @@ namespace Icfp2013.Operators
         public ulong Eval(ulong[] arg)
         {
             return ~arg[0];
+        }
+
+        public override string ToString()
+        {
+            return "Not";
         }
     }
 
@@ -94,6 +134,11 @@ namespace Icfp2013.Operators
         {
             return arg[0] & arg[1];
         }
+
+        public override string ToString()
+        {
+            return "And";
+        }
     }
 
     class Or : Op
@@ -102,6 +147,11 @@ namespace Icfp2013.Operators
         public ulong Eval(ulong[] arg)
         {
             return arg[0] | arg[1];
+        }
+
+        public override string ToString()
+        {
+            return "Or";
         }
     }
 
@@ -112,6 +162,11 @@ namespace Icfp2013.Operators
         {
             return arg[0] ^ arg[1];
         }
+
+        public override string ToString()
+        {
+            return "Xor";
+        }
     }
 
     class Plus : Op
@@ -120,6 +175,11 @@ namespace Icfp2013.Operators
         public ulong Eval(ulong[] arg)
         {
             return arg[0] + arg[1];
+        }
+
+        public override string ToString()
+        {
+            return "Plus";
         }
     }
 
@@ -130,6 +190,11 @@ namespace Icfp2013.Operators
         public ulong Eval(ulong[] arg)
         {
             return arg[0] == 0 ? arg[1] : arg[2];
+        }
+
+        public override string ToString()
+        {
+            return "If0";
         }
     }
 }

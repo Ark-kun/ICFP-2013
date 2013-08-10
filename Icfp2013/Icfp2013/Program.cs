@@ -25,14 +25,14 @@ namespace Icfp2013
 
         static void Main(string[] args)
         {
-            JsonReader reader = MakeRequest(RequestType.train, new JObject(new JProperty("size", 4)));
+            //JsonReader reader = MakeRequest(RequestType.train, new JObject(new JProperty("size", 4)));
 
 
-            JsonSerializer ser = new JsonSerializer();
-            TrainResponse resp = ser.Deserialize<TrainResponse>(reader);
+            //JsonSerializer ser = new JsonSerializer();
+            //TrainResponse resp = ser.Deserialize<TrainResponse>(reader);
 
-            //Searcher s = new Searcher(5);
-            //s.Find();
+            Searcher s = new Searcher(3);
+            s.Find();
 
             Console.ReadLine();
         }
