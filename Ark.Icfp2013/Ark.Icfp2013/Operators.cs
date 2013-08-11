@@ -10,9 +10,10 @@ namespace Ark.Icfp2013 {
 
     public abstract class FormulaNode {
         protected ulong[] _results;
+        int? hashCode;
 
         public ulong[] Results {
-            get { return _results; }
+            get { return GetResults(); }
             set { _results = value; }
         }
 
@@ -30,22 +31,31 @@ namespace Ark.Icfp2013 {
 
         protected abstract ulong EvaluateInternal(ulong x);
 
-        public abstract void FillResults();
+        public void CacheResults() {
+            _results = GetResults();
+        }
+
+        public abstract ulong[] GetResults();
 
         public abstract override string ToString();
 
         public override bool Equals(object obj) {
             var otherFormula = obj as FormulaNode;
-            return otherFormula != null && _results.EqualsTo(otherFormula.Results);
+            return otherFormula != null && this.GetResults().EqualsTo(otherFormula.GetResults());
         }
 
         public override int GetHashCode() {
-            return _results.MurmurHash2();
+            if (!hashCode.HasValue) {
+                hashCode = this.GetResults().MurmurHash3();
+            }
+            return hashCode.Value;
         }
     }
 
     public abstract class NullaryNode : FormulaNode {
-        public override void FillResults() { }
+        public override ulong[] GetResults() {
+            return _results;
+        }
     }
 
     public abstract class UnaryNode : FormulaNode {
@@ -57,12 +67,16 @@ namespace Ark.Icfp2013 {
             _arg = arg;
         }
 
-        public override void FillResults() {
-            var argResults = _arg.Results;
-            _results = new ulong[argResults.Length];
-            for (int i = 0; i < argResults.Length; i++) {
-                _results[i] = EvaluateOperator(argResults[i]);
+        public override ulong[] GetResults() {
+            if (_results != null) {
+                return _results;
             }
+            var argResults = _arg.GetResults();
+            var results = new ulong[argResults.Length];
+            for (int i = 0; i < argResults.Length; i++) {
+                results[i] = EvaluateOperator(argResults[i]);
+            }
+            return results;
         }
     }
 
@@ -77,13 +91,17 @@ namespace Ark.Icfp2013 {
             _arg2 = arg2;
         }
 
-        public override void FillResults() {
-            var arg1Results = _arg1.Results;
-            var arg2Results = _arg2.Results;
-            _results = new ulong[arg1Results.Length];
-            for (int i = 0; i < arg1Results.Length; i++) {
-                _results[i] = EvaluateOperator(arg1Results[i], arg2Results[i]);
+        public override ulong[] GetResults() {
+            if (_results != null) {
+                return _results;
             }
+            var arg1Results = _arg1.GetResults();
+            var arg2Results = _arg2.GetResults();
+            var results = new ulong[arg1Results.Length];
+            for (int i = 0; i < arg1Results.Length; i++) {
+                results[i] = EvaluateOperator(arg1Results[i], arg2Results[i]);
+            }
+            return results;
         }
     }
 
@@ -100,14 +118,18 @@ namespace Ark.Icfp2013 {
             _arg3 = arg3;
         }
 
-        public override void FillResults() {
-            var arg1Results = _arg1.Results;
-            var arg2Results = _arg2.Results;
-            var arg3Results = _arg2.Results;
-            _results = new ulong[arg1Results.Length];
-            for (int i = 0; i < arg1Results.Length; i++) {
-                _results[i] = EvaluateOperator(arg1Results[i], arg2Results[i], arg3Results[i]);
+        public override ulong[] GetResults() {
+            if (_results != null) {
+                return _results;
             }
+            var arg1Results = _arg1.GetResults();
+            var arg2Results = _arg2.GetResults();
+            var arg3Results = _arg2.GetResults();
+            var results = new ulong[arg1Results.Length];
+            for (int i = 0; i < arg1Results.Length; i++) {
+                results[i] = EvaluateOperator(arg1Results[i], arg2Results[i], arg3Results[i]);
+            }
+            return results;
         }
     }
 

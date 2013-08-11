@@ -47,7 +47,7 @@ namespace Ark.Icfp2013 {
                             foreach (var factory in unaryFactories) {
                                 var formula = factory(arg);
                                 if (formula != null) {
-                                    formula.FillResults();
+                                    formula.CacheResults();
                                     if (allFormulas.Add(formula)) {
                                         formulas.Add(formula);
                                     } else {
@@ -70,7 +70,7 @@ namespace Ark.Icfp2013 {
                                     foreach (var factory in binaryFactories) {
                                         var formula = factory(arg1, arg2);
                                         if (formula != null) {
-                                            formula.FillResults();
+                                            formula.CacheResults();
                                             if (allFormulas.Add(formula)) {
                                                 formulas.Add(formula);
                                             } else {
@@ -81,6 +81,7 @@ namespace Ark.Icfp2013 {
                             }
                         }
                     }
+                    Console.WriteLine("Count(size = {0}) = {1}", level, formulas.Count);
                     formulasByLevel.Add(formulas);
                 }
             } catch (OutOfMemoryException ex) {
