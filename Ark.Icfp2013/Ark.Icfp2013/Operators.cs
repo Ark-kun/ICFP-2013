@@ -52,6 +52,20 @@ namespace Ark.Icfp2013 {
         }
     }
 
+    public class KnownResultsNode : FormulaNode {
+        protected override ulong EvaluateInternal(ulong x) {
+            throw new System.NotImplementedException();
+        }
+
+        public override ulong[] GetResults() {
+            return _results;
+        }
+
+        public override string ToString() {
+            throw new System.NotImplementedException();
+        }
+    }
+
     public abstract class NullaryNode : FormulaNode {
         public override ulong[] GetResults() {
             return _results;
