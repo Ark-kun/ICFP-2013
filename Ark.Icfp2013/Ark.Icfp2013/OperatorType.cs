@@ -3,6 +3,7 @@
 namespace Ark.Icfp2013 {
     [Flags]
     public enum OperatorType {
+        None = 0,
         Shl1 = 1 << 0,
         Shr1 = 1 << 1,
         Shr4 = 1 << 2,
