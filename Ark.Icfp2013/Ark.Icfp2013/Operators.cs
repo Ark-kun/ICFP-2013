@@ -145,7 +145,7 @@ namespace Ark.Icfp2013 {
             }
             var arg1Results = _arg1.GetResults();
             var arg2Results = _arg2.GetResults();
-            var arg3Results = _arg2.GetResults();
+            var arg3Results = _arg3.GetResults();
             var results = new ulong[arg1Results.Length];
             for (int i = 0; i < arg1Results.Length; i++) {
                 results[i] = EvaluateOperator(arg1Results[i], arg2Results[i], arg3Results[i]);
