@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace Ark.Icfp2013 {
 
@@ -8,59 +9,155 @@ namespace Ark.Icfp2013 {
     //    ulong CurrentByte;
     //}
 
+    [Serializable]
     public abstract class FormulaNode {
-        Dictionary<ulong, ulong> _cache;
+        protected ulong[] _results;
+        int? hashCode;
+
+        public ulong[] Results {
+            get { return GetResults(); }
+            set { _results = value; }
+        }
+
+        //Dictionary<ulong, ulong> _cache;
 
         public ulong Evaluate(ulong x) {
-            ulong result = 0;
-            if (!_cache.TryGetValue(x, out result)) {
-                result = EvaluateInternal(x);
-                _cache[x] = result;
-            }
-            return result;
+            return EvaluateInternal(x);
+            //ulong result = 0;
+            //if (!_cache.TryGetValue(x, out result)) {
+            //    result = EvaluateInternal(x);
+            //    _cache[x] = result;
+            //}
+            //return result;
         }
 
         protected abstract ulong EvaluateInternal(ulong x);
 
+        public void CacheResults() {
+            _results = GetResults();
+        }
+
+        public abstract ulong[] GetResults();
+
         public abstract override string ToString();
+
+        public override bool Equals(object obj) {
+            var otherFormula = obj as FormulaNode;
+            return otherFormula != null && this.GetResults().EqualsTo(otherFormula.GetResults());
+        }
+
+        public override int GetHashCode() {
+            if (!hashCode.HasValue) {
+                hashCode = this.GetResults().MurmurHash3();
+            }
+            return hashCode.Value;
+        }
     }
 
+    [Serializable]
+    public class KnownResultsNode : FormulaNode {
+        protected override ulong EvaluateInternal(ulong x) {
+            throw new System.NotImplementedException();
+        }
+
+        public override ulong[] GetResults() {
+            return _results;
+        }
+
+        public override string ToString() {
+            throw new System.NotImplementedException();
+        }
+    }
+
+    [Serializable]
     public abstract class NullaryNode : FormulaNode {
+        public override ulong[] GetResults() {
+            return _results;
+        }
     }
 
+    [Serializable]
     public abstract class UnaryNode : FormulaNode {
         protected FormulaNode _arg;
+
+        public abstract ulong EvaluateOperator(ulong arg);
 
         public UnaryNode(FormulaNode arg) {
             _arg = arg;
         }
+
+        public override ulong[] GetResults() {
+            if (_results != null) {
+                return _results;
+            }
+            var argResults = _arg.GetResults();
+            var results = new ulong[argResults.Length];
+            for (int i = 0; i < argResults.Length; i++) {
+                results[i] = EvaluateOperator(argResults[i]);
+            }
+            return results;
+        }
     }
 
+    [Serializable]
     public abstract class BinaryNode : FormulaNode {
         protected FormulaNode _arg1;
         protected FormulaNode _arg2;
+
+        public abstract ulong EvaluateOperator(ulong arg1, ulong arg2);
 
         public BinaryNode(FormulaNode arg1, FormulaNode arg2) {
             _arg1 = arg1;
             _arg2 = arg2;
         }
+
+        public override ulong[] GetResults() {
+            if (_results != null) {
+                return _results;
+            }
+            var arg1Results = _arg1.GetResults();
+            var arg2Results = _arg2.GetResults();
+            var results = new ulong[arg1Results.Length];
+            for (int i = 0; i < arg1Results.Length; i++) {
+                results[i] = EvaluateOperator(arg1Results[i], arg2Results[i]);
+            }
+            return results;
+        }
     }
 
+    [Serializable]
     public abstract class TernaryNode : FormulaNode {
         protected FormulaNode _arg1;
         protected FormulaNode _arg2;
         protected FormulaNode _arg3;
+
+        public abstract ulong EvaluateOperator(ulong arg1, ulong arg2, ulong arg3);
 
         public TernaryNode(FormulaNode arg1, FormulaNode arg2, FormulaNode arg3) {
             _arg1 = arg1;
             _arg2 = arg2;
             _arg3 = arg3;
         }
+
+        public override ulong[] GetResults() {
+            if (_results != null) {
+                return _results;
+            }
+            var arg1Results = _arg1.GetResults();
+            var arg2Results = _arg2.GetResults();
+            var arg3Results = _arg3.GetResults();
+            var results = new ulong[arg1Results.Length];
+            for (int i = 0; i < arg1Results.Length; i++) {
+                results[i] = EvaluateOperator(arg1Results[i], arg2Results[i], arg3Results[i]);
+            }
+            return results;
+        }
     }
 
     //Nullary
+    [Serializable]
     public class Zero : NullaryNode {
-        public static FormulaNode Create() { 
+        public static FormulaNode Create() {
             return new Zero();
         }
 
@@ -73,6 +170,7 @@ namespace Ark.Icfp2013 {
         }
     }
 
+    [Serializable]
     public class One : NullaryNode {
         public static FormulaNode Create() {
             return new One();
@@ -86,7 +184,8 @@ namespace Ark.Icfp2013 {
             return "1";
         }
     }
-    
+
+    [Serializable]
     public class ArgX : NullaryNode { //?
         public static FormulaNode Create() {
             return new ArgX();
@@ -102,14 +201,19 @@ namespace Ark.Icfp2013 {
     }
 
     //Unary
+    [Serializable]
     public class Shl1 : UnaryNode {
         public Shl1(FormulaNode arg) : base(arg) { }
 
-        public static FormulaNode Create(FormulaNode arg) {
+        public static UnaryNode Create(FormulaNode arg) {
             if (arg is Zero) {
                 return null;
             }
             return new Shl1(arg);
+        }
+
+        public override ulong EvaluateOperator(ulong arg) {
+            return arg << 1;
         }
 
         protected override ulong EvaluateInternal(ulong x) {
@@ -121,14 +225,19 @@ namespace Ark.Icfp2013 {
         }
     }
 
+    [Serializable]
     public class Shr1 : UnaryNode {
         public Shr1(FormulaNode arg) : base(arg) { }
 
-        public static FormulaNode Create(FormulaNode arg) {
+        public static UnaryNode Create(FormulaNode arg) {
             if (arg is Zero || arg is One) {
                 return null;
             }
             return new Shr1(arg);
+        }
+
+        public override ulong EvaluateOperator(ulong arg) {
+            return arg >> 1;
         }
 
         protected override ulong EvaluateInternal(ulong x) {
@@ -140,14 +249,19 @@ namespace Ark.Icfp2013 {
         }
     }
 
+    [Serializable]
     public class Shr4 : UnaryNode {
         public Shr4(FormulaNode arg) : base(arg) { }
 
-        public static FormulaNode Create(FormulaNode arg) {
+        public static UnaryNode Create(FormulaNode arg) {
             if (arg is Zero || arg is One) {
                 return null;
             }
             return new Shr4(arg);
+        }
+
+        public override ulong EvaluateOperator(ulong arg) {
+            return arg >> 4;
         }
 
         protected override ulong EvaluateInternal(ulong x) {
@@ -159,14 +273,19 @@ namespace Ark.Icfp2013 {
         }
     }
 
+    [Serializable]
     public class Shr16 : UnaryNode {
         public Shr16(FormulaNode arg) : base(arg) { }
 
-        public static FormulaNode Create(FormulaNode arg) {
+        public static UnaryNode Create(FormulaNode arg) {
             if (arg is Zero || arg is One) {
                 return null;
             }
             return new Shr16(arg);
+        }
+
+        public override ulong EvaluateOperator(ulong arg) {
+            return arg >> 16;
         }
 
         protected override ulong EvaluateInternal(ulong x) {
@@ -178,14 +297,19 @@ namespace Ark.Icfp2013 {
         }
     }
 
+    [Serializable]
     public class Not : UnaryNode {
         public Not(FormulaNode arg) : base(arg) { }
 
-        public static FormulaNode Create(FormulaNode arg) {
+        public static UnaryNode Create(FormulaNode arg) {
             if (arg is Not) {
                 return null;
             }
             return new Not(arg);
+        }
+
+        public override ulong EvaluateOperator(ulong arg) {
+            return ~arg;
         }
 
         protected override ulong EvaluateInternal(ulong x) {
@@ -198,14 +322,19 @@ namespace Ark.Icfp2013 {
     }
 
     //Binary
+    [Serializable]
     public class And : BinaryNode {
         public And(FormulaNode arg1, FormulaNode arg2) : base(arg1, arg2) { }
 
-        public static FormulaNode Create(FormulaNode arg1, FormulaNode arg2) {
-            if (arg1 is Zero || arg2 is Zero) {
+        public static BinaryNode Create(FormulaNode arg1, FormulaNode arg2) {
+            if (arg1 is Zero || arg2 is Zero || object.ReferenceEquals(arg1, arg2) || (arg1 is One && arg2 is Shl1) || (arg2 is One && arg1 is Shl1)) {
                 return null;
             }
             return new And(arg1, arg2);
+        }
+
+        public override ulong EvaluateOperator(ulong arg1, ulong arg2) {
+            return arg1 & arg2;
         }
 
         protected override ulong EvaluateInternal(ulong x) {
@@ -217,14 +346,19 @@ namespace Ark.Icfp2013 {
         }
     }
 
+    [Serializable]
     public class Or : BinaryNode {
         public Or(FormulaNode arg1, FormulaNode arg2) : base(arg1, arg2) { }
 
-        public static FormulaNode Create(FormulaNode arg1, FormulaNode arg2) {
-            if (arg1 is Zero || arg2 is Zero) {
+        public static BinaryNode Create(FormulaNode arg1, FormulaNode arg2) {
+            if (arg1 is Zero || arg2 is Zero || object.ReferenceEquals(arg1, arg2)) {
                 return null;
             }
             return new Or(arg1, arg2);
+        }
+
+        public override ulong EvaluateOperator(ulong arg1, ulong arg2) {
+            return arg1 | arg2;
         }
 
         protected override ulong EvaluateInternal(ulong x) {
@@ -236,14 +370,19 @@ namespace Ark.Icfp2013 {
         }
     }
 
+    [Serializable]
     public class Xor : BinaryNode {
         public Xor(FormulaNode arg1, FormulaNode arg2) : base(arg1, arg2) { }
 
-        public static FormulaNode Create(FormulaNode arg1, FormulaNode arg2) {
-            if (arg1 is Zero || arg2 is Zero) {
+        public static BinaryNode Create(FormulaNode arg1, FormulaNode arg2) {
+            if (arg1 is Zero || arg2 is Zero || object.ReferenceEquals(arg1, arg2)) {
                 return null;
             }
             return new Xor(arg1, arg2);
+        }
+
+        public override ulong EvaluateOperator(ulong arg1, ulong arg2) {
+            return arg1 ^ arg2;
         }
 
         protected override ulong EvaluateInternal(ulong x) {
@@ -255,14 +394,19 @@ namespace Ark.Icfp2013 {
         }
     }
 
+    [Serializable]
     public class Plus : BinaryNode {
         public Plus(FormulaNode arg1, FormulaNode arg2) : base(arg1, arg2) { }
 
-        public static FormulaNode Create(FormulaNode arg1, FormulaNode arg2) {
+        public static BinaryNode Create(FormulaNode arg1, FormulaNode arg2) {
             if (arg1 is Zero || arg2 is Zero) {
                 return null;
             }
             return new Plus(arg1, arg2);
+        }
+
+        public override ulong EvaluateOperator(ulong arg1, ulong arg2) {
+            return arg1 + arg2;
         }
 
         protected override ulong EvaluateInternal(ulong x) {
@@ -275,11 +419,16 @@ namespace Ark.Icfp2013 {
     }
 
     //Ternary
+    [Serializable]
     public class If0 : TernaryNode {
         public If0(FormulaNode arg1, FormulaNode arg2, FormulaNode arg3) : base(arg1, arg2, arg3) { }
 
-        public static FormulaNode Create(FormulaNode arg1, FormulaNode arg2, FormulaNode arg3) {
+        public static TernaryNode Create(FormulaNode arg1, FormulaNode arg2, FormulaNode arg3) {
             return new If0(arg1, arg2, arg3);
+        }
+
+        public override ulong EvaluateOperator(ulong arg1, ulong arg2, ulong arg3) {
+            return arg1 == 0 ? arg2 : arg3;
         }
 
         protected override ulong EvaluateInternal(ulong x) {
