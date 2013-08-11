@@ -23,6 +23,7 @@ namespace Ark.Icfp2013 {
             var formulasLevel1 = new List<FormulaNode> { zero, one, argX };
             _formulasByLevel.Add(formulasLevel1);
 
+            _allFormulas.UnionWith(formulasLevel1);
 
             try {
                 for (int level = 2; level <= maxLevel; level++) {
