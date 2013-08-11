@@ -25,6 +25,56 @@ namespace Ark.Icfp2013 {
             return true;
         }
 
+        //public static int DumbHash(this ulong[] values) {
+        //    int sum = 0x5bd1e995;
+        //    foreach (var value in values) { 
+                
+        //    }
+        //}
+
+        public static int MurmurHash3(this ulong[] values) {
+            uint seed = 0;
+            const uint c1 = 0xcc9e2d51;
+            const uint c2 = 0x1b873593;
+            const int r1 = 15;
+            const int r1m = 32 - r1;
+            const int r2 = 13;
+            const int r2m = 32 - r2;
+            const uint m = 5;
+            const uint n = 0xe6546b64;
+
+            uint hash = seed;
+
+            foreach (var value in values) {
+                uint k = (uint)(value >> 32);
+                k *= c1;
+                k = (k << r1) | (k >> r1m);
+                k *= c2;
+
+                hash ^= k;
+                hash = (hash << r2) | (hash >> r2m);
+                hash *= m;
+                hash += n;
+
+                k = (uint)value;
+                k *= c1;
+                k = (k << r1) | (k >> r1m);
+                k *= c2;
+
+                hash ^= k;
+                hash = (hash << r2) | (hash >> r2m);
+                hash *= m;
+                hash += n;
+            }
+            hash ^= (uint)values.Length * 8;
+            hash ^= hash >> 16;
+            hash *= 0x85ebca6b;
+            hash ^= hash >> 13;
+            hash *= 0xc2b2ae35;
+            hash ^= hash >> 16;
+            return unchecked((int)hash);
+        }
+
         public static int MurmurHash2(this ulong[] values) {
             byte[] source = new byte[values.Length * 8];
 
