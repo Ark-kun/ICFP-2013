@@ -70,6 +70,30 @@ namespace Ark.Icfp2013 {
     }
 
     [Serializable]
+    public class RootLambda : UnaryNode {
+        public RootLambda(FormulaNode arg) : base(arg) { }
+
+        public static UnaryNode Create(FormulaNode arg) {
+            if (arg is RootLambda) {
+                return null;
+            }
+            return new RootLambda(arg);
+        }
+
+        public override ulong EvaluateOperator(ulong arg) {
+            return arg;
+        }
+
+        protected override ulong EvaluateInternal(ulong x) {
+            return _arg.Evaluate(x);
+        }
+
+        public override string ToString() {
+            return "(lambda (x) " + _arg.ToString() + ")";
+        }
+    }
+
+    [Serializable]
     public abstract class NullaryNode : FormulaNode {
         public override ulong[] GetResults() {
             return _results;
