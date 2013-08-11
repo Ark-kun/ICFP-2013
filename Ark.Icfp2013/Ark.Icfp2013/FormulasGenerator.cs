@@ -73,6 +73,43 @@ namespace Ark.Icfp2013 {
                             }
                         }
                     }
+
+                    //Ternary
+                    foreach (var factory in ternaryFactories) {
+                        for (int ternaryArg1Level = 1; ternaryArg1Level < level; ternaryArg1Level++) {
+                            for (int ternaryArg2Level = 1; ternaryArg2Level < level; ternaryArg2Level++) {
+                                int ternaryArg3Level = level - ternaryArg1Level - ternaryArg2Level - 1;
+                                if (ternaryArg3Level > 0) {
+                                    var formulas1 = _formulasByLevel[ternaryArg1Level];
+                                    var formulas2 = _formulasByLevel[ternaryArg2Level];
+                                    var formulas3 = _formulasByLevel[ternaryArg3Level];
+                                    for (int arg1Idx = 0; arg1Idx < formulas1.Count; arg1Idx++) {
+                                        int arg2IdxStart = 0; //ternary operators are not com mutative
+                                        for (int arg2Idx = arg2IdxStart; arg2Idx < formulas2.Count; arg2Idx++) {
+                                            int arg3IdxStart = 0; //ternary operators are not com mutative
+                                            for (int arg3Idx = arg3IdxStart; arg3Idx < formulas3.Count; arg3Idx++) {
+                                                var arg1 = formulas1[arg1Idx];
+                                                var arg2 = formulas2[arg2Idx];
+                                                var arg3 = formulas3[arg3Idx];
+
+                                                var formula = factory(arg1, arg2, arg3);
+                                                if (formula != null) {
+                                                    if (level <= 10) {
+                                                        formula.CacheResults();
+                                                    }
+                                                    if (_allFormulas.Add(formula)) {
+                                                        formulas.Add(formula);
+                                                    } else {
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     Console.WriteLine("Count(size = {0}) = {1}; {2}", level, formulas.Count, DateTime.UtcNow);
                     _formulasByLevel.Add(formulas);
                 }
