@@ -153,7 +153,7 @@ namespace Icfp2013
 
 
 
-            //CacheEntry test = new CacheEntry() { Program = "(lambda (x) (or (shr4 0) (shr16 (not x))))" };
+            //CacheEntry test = new CacheEntry() { Program = "(lambda (x) (xor (not x) x))" };
             //test.ParseProgram();
 
             //Evals tev = new Evals()

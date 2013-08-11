@@ -26,9 +26,12 @@ namespace Icfp2013
 
         public static ulong[] EvalArgs;
         public static List<TrainResponse> RealProblems;
+        public static List<string> RealSolvedIDs;
 
         static void Main(string[] args)
         {
+           RealSolvedIDs = File.ReadAllLines("attempted.txt").ToList();
+           
             MyProblems();
 
             if (File.Exists("randoms.txt"))
@@ -58,18 +61,40 @@ namespace Icfp2013
 
             Dzugaru.Search.Solver.IterativeDeepeningStep += () => { Searcher.AllEvals.Clear(); System.IO.File.AppendAllText("allguesses.txt", "--------------------\r\n"); };
 
-            int[] cacheSizes = new[] { 6 };
+            int[] cacheSizes = new[] { 0 };
 
             int wins = 0, losses = 0;
             int haltID = 0;            
             for (;;)
             {
                 File.Delete("allguesses.txt");
-                //Problem p = GetTrainProblem(10);
+                //Problem p = GetTrainProblem(12);
                 //Problem p = GetLastProblem();
-                Problem p = GetRealProblem(a => a.Size <= 10 && !a.Operators.Contains("if0"));
+
+                Problem p;
+
+                
+                RealSolvedIDs = File.ReadAllLines("attempted.txt").ToList();
+
+                for (; ; )
+                {
+                    try
+                    {
+                        p = GetRealProblem(a => !a.Operators.Contains("bonus") && a.Operators.Contains("tfold"));
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine("Too many requests!");
+                        Thread.Sleep(4000);
+                        continue;
+                    }
+
+                    break;
+                }
+
                 RealProblems.RemoveAll(a => a.Id == p.ID);
                 File.AppendAllText("attempted.txt", p.ID + "\r\n");
+                RealSolvedIDs.Add(p.ID);
 
                 Console.WriteLine("\r\nGot problem: " + p.ToString());
                
@@ -80,7 +105,7 @@ namespace Icfp2013
                     FuncCache.S.ReadCache(p);                                    
 
                     int currHaltID = haltID;
-                    Task haltTask = new Task(() => { Thread.Sleep(TimeSpan.FromSeconds(30)); if (currHaltID != haltID) return; Dzugaru.Search.Solver.ShouldHaltSearch = true; });
+                    Task haltTask = new Task(() => { Thread.Sleep(TimeSpan.FromSeconds(120)); if (currHaltID != haltID) return; Dzugaru.Search.Solver.ShouldHaltSearch = true; });
                     //haltTask.Start();
 
                     Searcher s = new Searcher();
@@ -100,7 +125,26 @@ namespace Icfp2013
                             result = tfoldRoot;
                         }
 
-                        if (SubmitGuess(p.ID, result))
+
+                        bool submitted;
+
+                        for (; ; )
+                        {
+                            try
+                            {
+                                submitted = SubmitGuess(p.ID, result);
+                            }
+                            catch (Exception e)
+                            {
+                                Console.WriteLine("Too many requests!");
+                                Thread.Sleep(4000);
+                                continue;
+                            }
+
+                            break;
+                        }
+
+                        if (submitted)
                         {
                             Console.WriteLine("Guess accepted!!");
                             wins++;                            
@@ -124,8 +168,8 @@ namespace Icfp2013
                 }
 
                 Console.WriteLine("Score: " + wins + "/" + losses);
-                Thread.Sleep(10000);
-                Console.WriteLine("Ready next");
+                //Thread.Sleep(20000);
+                //Console.WriteLine("Ready next");
                 //Console.ReadLine();
             }
 
@@ -159,27 +203,32 @@ namespace Icfp2013
 
         static Problem GetProblemFromResp(TrainResponse resp)
         {
-            var evalJObject = new JObject(
-                new JProperty("id", resp.Id),
-                new JProperty("arguments", new JArray(EvalArgs.Take(256).Select(a => a.ToString("X")).ToArray())));
-            JsonReader  reader = MakeRequest(RequestType.eval, evalJObject);
-
-            JObject evalResp = (JObject)JObject.ReadFrom(reader);
-            ulong[] results = evalResp["outputs"].Value<JArray>().Select(a => ulong.Parse(a.Value<string>().Substring(2), System.Globalization.NumberStyles.HexNumber)).ToArray();
-
             Problem pr = new Problem()
             {
                 ID = resp.Id,
                 Size = resp.Size,
-                Evals = new ulong[results.Length][],
+                Evals = new ulong[512][],
                 Solution = resp.Program
             };
 
             pr.SetAllowedOperators(resp.Operators);
 
-            for (int i = 0; i < results.Length; i++)
+            ulong[] results = new ulong[512];
+            for (int i = 0; i < 2; i++)
             {
-                pr.Evals[i] = new[] { EvalArgs[i], results[i] };
+                var evalJObject = new JObject(
+                    new JProperty("id", resp.Id),
+                    new JProperty("arguments", new JArray(EvalArgs.Skip(256 * i).Take(256).Select(a => a.ToString("X")).ToArray())));
+                JsonReader reader = MakeRequest(RequestType.eval, evalJObject);
+
+                JObject evalResp = (JObject)JObject.ReadFrom(reader);
+
+                for (int j = 0; j < 256; j++)
+                {
+                    pr.Evals[i * 256 + j] = new ulong[2];
+                    pr.Evals[i * 256 + j][0] = EvalArgs[i * 256 + j];
+                    pr.Evals[i * 256 + j][1] = ulong.Parse(evalResp["outputs"][j].Value<string>().Substring(2), System.Globalization.NumberStyles.HexNumber);                  
+                }
             }
 
             return pr;
@@ -212,14 +261,14 @@ namespace Icfp2013
 
         static Problem GetTrainProblem(int size)
         {
-            JsonReader reader = MakeRequest(RequestType.train, new JObject(new JProperty("size", size), new JProperty("operators", new JArray())));
+            JsonReader reader = MakeRequest(RequestType.train, new JObject(new JProperty("size", size)/*, new JProperty("operators", new JArray()))*/));
             return GetProblemFromReader(reader, true);
         }
 
         static Problem GetRealProblem(Func<TrainResponse, bool> predicate)
         {
             Console.WriteLine("Problems of this type left: " + RealProblems.Count(a => predicate(a)));
-            return GetProblemFromResp(RealProblems.First(a => predicate(a)));
+            return GetProblemFromResp(RealProblems.First(a => predicate(a) && !RealSolvedIDs.Contains(a.Id)));
         }
 
         static ulong[] GetUlongsForEval(int num)
@@ -299,7 +348,7 @@ namespace Icfp2013
 
         static void MyProblems()
         {
-            string[] solvedIds = File.ReadAllLines("attempted.txt");
+          
             string s = File.ReadAllText("myproblems.txt");
             JArray probs = JArray.Parse(s);
             JsonSerializer ser = new JsonSerializer();
@@ -308,15 +357,15 @@ namespace Icfp2013
             foreach (var p in probs)
             {
                 TrainResponse resp = ser.Deserialize<TrainResponse>(((JObject)p).CreateReader());
-                if (!solvedIds.Contains(resp.Id))
+                if (!RealSolvedIDs.Contains(resp.Id))
                 {
                     RealProblems.Add(resp);
                 }
             }
 
+           
+
             int k = RealProblems.Count(a => a.Operators.Contains("tfold"));
-
-
         }
 
 

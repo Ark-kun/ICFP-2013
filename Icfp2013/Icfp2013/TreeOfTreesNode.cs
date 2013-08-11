@@ -69,7 +69,7 @@ namespace Icfp2013
                             //Console.WriteLine(newTreeOfTreesNode.FunctionTreeRoot);
                             //Searcher.CacheStreamWriter.Write(newTreeOfTreesNode.FunctionTreeRoot + "\t" + newTreeOfTreesNode.HasFold + "\t" + newTreeOfTreesNode.FunctionTreeRoot.CalculatedEvals.ToString() + "\r\n");
 
-                        yield return new SAction() { Next = newTreeOfTreesNode, Cost = newTreeOfTreesNode.FunctionTreeRoot.GetSize() - FunctionTreeRoot.GetSize() };
+                        yield return new SAction() { Next = newTreeOfTreesNode };
                         //}
 
                         //else
@@ -105,14 +105,27 @@ namespace Icfp2013
                             newTreeOfTreesNode.NumCachedOps = this.NumCachedOps + 1;
                             newTreeOfTreesNode.FunctionTreeRoot.HasCacheOp = true;
                             newTreeOfTreesNode.FunctionTreeRoot.CalcFuncEvals(problem);
-                            yield return new SAction() { Next = newTreeOfTreesNode, Cost = newTreeOfTreesNode.FunctionTreeRoot.GetSize() - FunctionTreeRoot.GetSize() };
+                            yield return new SAction() { Next = newTreeOfTreesNode };
                         }
                     }
                 }
             }
 
+            //Custom ordering
+            List<FunctionTreeNode> shuffledChilrden;
 
-            var shuffledChilrden = Shuffle(node.Children);
+            //if (node.Operator is Operators.Fold)
+            //{
+            //    shuffledChilrden = new List<FunctionTreeNode>();
+            //    shuffledChilrden.Add(node.Children[2]);
+            //    shuffledChilrden.Add(node.Children[0]);
+            //    shuffledChilrden.Add(node.Children[1]);
+            //}
+            //else
+            //{
+                shuffledChilrden = Shuffle(node.Children);                
+            //}
+
             foreach (var ch in shuffledChilrden)
             {
                 foreach (var a in GetNext(ch, problem))

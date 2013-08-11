@@ -8,12 +8,12 @@ namespace Icfp2013
 {
     class TreeVisualizer
     {        
-        public string Visualize(FunctionTreeNode tree)
+        public string Visualize(FunctionTreeNode tree, bool cacheOpShow)
         {
-            return "(lambda (x) " + VisualizeInternal(tree) + ")";
+            return "(lambda (x) " + VisualizeInternal(tree, cacheOpShow) + ")";
         }
 
-        string VisualizeInternal(FunctionTreeNode tree)
+        string VisualizeInternal(FunctionTreeNode tree, bool cacheOpShow)
         {
             StringBuilder sb = new StringBuilder();
             if (tree.Operator.Arity > 0)
@@ -21,7 +21,15 @@ namespace Icfp2013
                 sb.Append("(");
             }
 
-            sb.Append(tree.Operator.ToString().ToLowerInvariant());
+
+            if (cacheOpShow && tree.Operator is Operators.CachedOp)
+            {
+                sb.Append("*");
+            }
+            else
+            {
+                sb.Append(tree.Operator.ToString().ToLowerInvariant());
+            }
 
             if (tree.Operator.Arity > 0)
             {
@@ -34,11 +42,11 @@ namespace Icfp2013
                     {
                         if (tree.Operator is Operators.Fold && i == 2)
                         {
-                            return "(lambda (y z) " + VisualizeInternal(a) + ")";
+                            return "(lambda (y z) " + VisualizeInternal(a, cacheOpShow) + ")";
                         }
                         else
                         {
-                            return VisualizeInternal(a);
+                            return VisualizeInternal(a, cacheOpShow);
                         }
                     }).ToArray()));               
             }

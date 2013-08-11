@@ -38,7 +38,12 @@ namespace Icfp2013
             }
             else
             {
-                return Operator.Eval(Children.Select(a => a.Eval()).ToArray());
+                ulong[] args = new ulong[Children.Count];
+                for (int i = 0; i < args.Length; i++)
+                {
+                    args[i] = Children[i].Eval();
+                }
+                return Operator.Eval(args);
             }
         }
 
@@ -62,13 +67,19 @@ namespace Icfp2013
         {
             var clone = new FunctionTreeNode(Context, Parent) { Operator = this.Operator, IsInsideFoldLambda = this.IsInsideFoldLambda, HasCacheOp = this.HasCacheOp };
             this.LastClonedTo = clone;
-            clone.Children = this.Children.Select(ch => ch.Clone()).ToList();
+
+            clone.Children = new List<FunctionTreeNode>(Children.Count);
+            for (int i = 0; i < Children.Count; i++)
+            {
+                clone.Children.Add(Children[i].Clone());
+            }
+            
             return clone;
         }
 
         public override string ToString()
         {
-            return new TreeVisualizer().Visualize(this);
+            return new TreeVisualizer().Visualize(this, false);
         }
         
         public override bool Equals(object obj)
@@ -108,7 +119,7 @@ namespace Icfp2013
                 tfoldRoot.Children.Add(new FunctionTreeNode(Context) { Operator = new Operators.Zero() });
                 tfoldRoot.Children.Add(this);
 
-                int amount = 256;
+                int amount = 512;
                 for (int i = 0; i < amount; i++)
                 {
                     Context.ArgIndex = i;
@@ -124,7 +135,7 @@ namespace Icfp2013
             }
             else
             {
-                int amount = 256;
+                int amount = 512;
                 for (int i = 0; i < amount; i++)
                 {
                     Context.ArgIndex = i;
