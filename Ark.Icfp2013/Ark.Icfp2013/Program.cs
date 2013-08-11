@@ -50,7 +50,7 @@ namespace Ark.Icfp2013 {
                                     formula.FillResults();
                                     if (allFormulas.Add(formula)) {
                                         formulas.Add(formula);
-                                    } else { 
+                                    } else {
                                     }
                                 }
                             }

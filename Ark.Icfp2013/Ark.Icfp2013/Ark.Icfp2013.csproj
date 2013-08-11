@@ -42,7 +42,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ArrayEqualityHelpers.cs" />
-    <Compile Include="FunctionValues.cs" />
     <Compile Include="InputsGenerator.cs" />
     <Compile Include="Operators.cs" />
     <Compile Include="Program.cs" />
