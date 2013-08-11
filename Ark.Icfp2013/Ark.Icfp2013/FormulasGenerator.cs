@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 
 namespace Ark.Icfp2013 {
+    [Serializable]
     public class FormulasGenerator {
         List<List<FormulaNode>> _formulasByLevel;
         HashSet<FormulaNode> _allFormulas;

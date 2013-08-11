@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace Ark.Icfp2013 {
 
@@ -8,6 +9,7 @@ namespace Ark.Icfp2013 {
     //    ulong CurrentByte;
     //}
 
+    [Serializable]
     public abstract class FormulaNode {
         protected ulong[] _results;
         int? hashCode;
@@ -52,6 +54,7 @@ namespace Ark.Icfp2013 {
         }
     }
 
+    [Serializable]
     public class KnownResultsNode : FormulaNode {
         protected override ulong EvaluateInternal(ulong x) {
             throw new System.NotImplementedException();
@@ -66,12 +69,14 @@ namespace Ark.Icfp2013 {
         }
     }
 
+    [Serializable]
     public abstract class NullaryNode : FormulaNode {
         public override ulong[] GetResults() {
             return _results;
         }
     }
 
+    [Serializable]
     public abstract class UnaryNode : FormulaNode {
         protected FormulaNode _arg;
 
@@ -94,6 +99,7 @@ namespace Ark.Icfp2013 {
         }
     }
 
+    [Serializable]
     public abstract class BinaryNode : FormulaNode {
         protected FormulaNode _arg1;
         protected FormulaNode _arg2;
@@ -119,6 +125,7 @@ namespace Ark.Icfp2013 {
         }
     }
 
+    [Serializable]
     public abstract class TernaryNode : FormulaNode {
         protected FormulaNode _arg1;
         protected FormulaNode _arg2;
@@ -148,6 +155,7 @@ namespace Ark.Icfp2013 {
     }
 
     //Nullary
+    [Serializable]
     public class Zero : NullaryNode {
         public static FormulaNode Create() {
             return new Zero();
@@ -162,6 +170,7 @@ namespace Ark.Icfp2013 {
         }
     }
 
+    [Serializable]
     public class One : NullaryNode {
         public static FormulaNode Create() {
             return new One();
@@ -176,6 +185,7 @@ namespace Ark.Icfp2013 {
         }
     }
 
+    [Serializable]
     public class ArgX : NullaryNode { //?
         public static FormulaNode Create() {
             return new ArgX();
@@ -191,6 +201,7 @@ namespace Ark.Icfp2013 {
     }
 
     //Unary
+    [Serializable]
     public class Shl1 : UnaryNode {
         public Shl1(FormulaNode arg) : base(arg) { }
 
@@ -214,6 +225,7 @@ namespace Ark.Icfp2013 {
         }
     }
 
+    [Serializable]
     public class Shr1 : UnaryNode {
         public Shr1(FormulaNode arg) : base(arg) { }
 
@@ -237,6 +249,7 @@ namespace Ark.Icfp2013 {
         }
     }
 
+    [Serializable]
     public class Shr4 : UnaryNode {
         public Shr4(FormulaNode arg) : base(arg) { }
 
@@ -260,6 +273,7 @@ namespace Ark.Icfp2013 {
         }
     }
 
+    [Serializable]
     public class Shr16 : UnaryNode {
         public Shr16(FormulaNode arg) : base(arg) { }
 
@@ -283,6 +297,7 @@ namespace Ark.Icfp2013 {
         }
     }
 
+    [Serializable]
     public class Not : UnaryNode {
         public Not(FormulaNode arg) : base(arg) { }
 
@@ -307,6 +322,7 @@ namespace Ark.Icfp2013 {
     }
 
     //Binary
+    [Serializable]
     public class And : BinaryNode {
         public And(FormulaNode arg1, FormulaNode arg2) : base(arg1, arg2) { }
 
@@ -330,6 +346,7 @@ namespace Ark.Icfp2013 {
         }
     }
 
+    [Serializable]
     public class Or : BinaryNode {
         public Or(FormulaNode arg1, FormulaNode arg2) : base(arg1, arg2) { }
 
@@ -353,6 +370,7 @@ namespace Ark.Icfp2013 {
         }
     }
 
+    [Serializable]
     public class Xor : BinaryNode {
         public Xor(FormulaNode arg1, FormulaNode arg2) : base(arg1, arg2) { }
 
@@ -376,6 +394,7 @@ namespace Ark.Icfp2013 {
         }
     }
 
+    [Serializable]
     public class Plus : BinaryNode {
         public Plus(FormulaNode arg1, FormulaNode arg2) : base(arg1, arg2) { }
 
@@ -400,6 +419,7 @@ namespace Ark.Icfp2013 {
     }
 
     //Ternary
+    [Serializable]
     public class If0 : TernaryNode {
         public If0(FormulaNode arg1, FormulaNode arg2, FormulaNode arg3) : base(arg1, arg2, arg3) { }
 
