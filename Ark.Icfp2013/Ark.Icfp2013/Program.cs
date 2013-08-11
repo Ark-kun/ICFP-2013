@@ -7,14 +7,31 @@ using System.Threading.Tasks;
 namespace Ark.Icfp2013 {
     class Program {
         static void Main(string[] args) {
+            var inputs = InputsGenerator.GetInputs();
+
             var formulasByLevel = new List<List<FormulaNode>>();
+            var allFormulas = new HashSet<FormulaNode>();
 
             int maxLevel = 10;
 
             //var nullaryOps = new FormulaNode[] { Zero, One, ArgX };
             var formulasLevel0 = new List<FormulaNode>();
-            var formulasLevel1 = new List<FormulaNode> { new Zero(), new One(), new ArgX() };
             formulasByLevel.Add(formulasLevel0);
+
+            var zero = new Zero();
+            zero.Results = new ulong[inputs.Length];
+            var one = new One();
+            one.Results = new ulong[inputs.Length];
+            for (int i = 0; i < inputs.Length; i++) {
+                one.Results[i] = 1;
+            }
+            var argX = new ArgX();
+            argX.Results = new ulong[inputs.Length];
+            for (int i = 0; i < inputs.Length; i++) {
+                argX.Results[i] = inputs[i];
+            }
+
+            var formulasLevel1 = new List<FormulaNode> { zero, one, argX };
             formulasByLevel.Add(formulasLevel1);
 
             var unaryFactories = new Func<FormulaNode, FormulaNode>[] { Shl1.Create, Shr1.Create, Shr16.Create, Not.Create };
@@ -30,7 +47,11 @@ namespace Ark.Icfp2013 {
                             foreach (var factory in unaryFactories) {
                                 var formula = factory(arg);
                                 if (formula != null) {
-                                    formulas.Add(formula);
+                                    formula.FillResults();
+                                    if (allFormulas.Add(formula)) {
+                                        formulas.Add(formula);
+                                    } else { 
+                                    }
                                 }
                             }
                         }
@@ -49,7 +70,11 @@ namespace Ark.Icfp2013 {
                                     foreach (var factory in binaryFactories) {
                                         var formula = factory(arg1, arg2);
                                         if (formula != null) {
-                                            formulas.Add(formula);
+                                            formula.FillResults();
+                                            if (allFormulas.Add(formula)) {
+                                                formulas.Add(formula);
+                                            } else {
+                                            }
                                         }
                                     }
                                 }
