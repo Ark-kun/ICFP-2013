@@ -30,7 +30,7 @@ namespace Icfp2013
 
         public override string ToString()
         {            
-            return Solution;
+            return "[" + string.Join(",", AllowedOperatorsStrings) + "] " + Solution;
         }
 
         public Problem()
@@ -53,10 +53,10 @@ namespace Icfp2013
             if (IsCacheGenerator) return false;
 
             var func = ((TreeOfTreesNode)state).FunctionTreeRoot;
-            if (func.ToString().Contains("if0 (plus 0 0) 1 x"))
-            {
-                System.IO.File.AppendAllText("allguesses.txt", func+"\r\n");
-            }
+            //if (func.ToString().Contains("plus (if0 0 x 1) x"))
+            //{
+            //    System.IO.File.AppendAllText("allguesses.txt", func + "\r\n");
+            //}
 
             //for (int i = 0; i < Evals.Length; i++)
             //{                

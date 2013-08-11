@@ -25,12 +25,11 @@ namespace Icfp2013
         static string RequestPath = "http://icfpc2013.cloudapp.net/{0}?auth={1}";
 
         public static ulong[] EvalArgs;
+        public static List<TrainResponse> RealProblems;
 
         static void Main(string[] args)
         {
             MyProblems();
-
-
 
             if (File.Exists("randoms.txt"))
             {
@@ -59,19 +58,20 @@ namespace Icfp2013
 
             Dzugaru.Search.Solver.IterativeDeepeningStep += () => { Searcher.AllEvals.Clear(); System.IO.File.AppendAllText("allguesses.txt", "--------------------\r\n"); };
 
-            int[] cacheSizes = new[] { 5 };
+            int[] cacheSizes = new[] { 6 };
 
             int wins = 0, losses = 0;
             int haltID = 0;            
             for (;;)
             {
                 File.Delete("allguesses.txt");
-                //Problem p = GetTrainProblem(12);
-                Problem p = GetLastProblem();
-                
+                //Problem p = GetTrainProblem(10);
+                //Problem p = GetLastProblem();
+                Problem p = GetRealProblem(a => a.Size <= 10 && !a.Operators.Contains("if0"));
+                RealProblems.RemoveAll(a => a.Id == p.ID);
+                File.AppendAllText("attempted.txt", p.ID + "\r\n");
 
                 Console.WriteLine("\r\nGot problem: " + p.ToString());
-
                
 
                 for (int i=0; i < cacheSizes.Length; i++)
@@ -80,8 +80,8 @@ namespace Icfp2013
                     FuncCache.S.ReadCache(p);                                    
 
                     int currHaltID = haltID;
-                    Task haltTask = new Task(() => { Thread.Sleep(TimeSpan.FromSeconds(15)); if (currHaltID != haltID) return; Dzugaru.Search.Solver.ShouldHaltSearch = true; });
-                    haltTask.Start();
+                    Task haltTask = new Task(() => { Thread.Sleep(TimeSpan.FromSeconds(30)); if (currHaltID != haltID) return; Dzugaru.Search.Solver.ShouldHaltSearch = true; });
+                    //haltTask.Start();
 
                     Searcher s = new Searcher();
                     FunctionTreeNode result = s.Find(p);
@@ -108,7 +108,9 @@ namespace Icfp2013
                         else
                         {
                             Console.WriteLine("Mismatch!");
-                            losses++;                            
+                            //Let's try again
+                            i--;
+                            continue;
                         }
                         
                         break;
@@ -122,7 +124,9 @@ namespace Icfp2013
                 }
 
                 Console.WriteLine("Score: " + wins + "/" + losses);
-                Thread.Sleep(20000);
+                Thread.Sleep(10000);
+                Console.WriteLine("Ready next");
+                //Console.ReadLine();
             }
 
             Console.ReadLine();
@@ -153,21 +157,12 @@ namespace Icfp2013
             }
         }
 
-        static Problem GetProblemFromReader(JsonReader reader, bool saveResp)
+        static Problem GetProblemFromResp(TrainResponse resp)
         {
-            JsonSerializer ser = new JsonSerializer();
-            JObject obj = JObject.Load(reader);
-            TrainResponse resp = ser.Deserialize<TrainResponse>(obj.CreateReader());
-
-            if (saveResp)
-            {
-                File.WriteAllText("lastProblem.txt", obj.ToString());
-            }
-
             var evalJObject = new JObject(
                 new JProperty("id", resp.Id),
                 new JProperty("arguments", new JArray(EvalArgs.Take(256).Select(a => a.ToString("X")).ToArray())));
-            reader = MakeRequest(RequestType.eval, evalJObject);
+            JsonReader  reader = MakeRequest(RequestType.eval, evalJObject);
 
             JObject evalResp = (JObject)JObject.ReadFrom(reader);
             ulong[] results = evalResp["outputs"].Value<JArray>().Select(a => ulong.Parse(a.Value<string>().Substring(2), System.Globalization.NumberStyles.HexNumber)).ToArray();
@@ -190,6 +185,19 @@ namespace Icfp2013
             return pr;
         }
 
+        static Problem GetProblemFromReader(JsonReader reader, bool saveResp)
+        {
+            JsonSerializer ser = new JsonSerializer();
+            JObject obj = JObject.Load(reader);
+            TrainResponse resp = ser.Deserialize<TrainResponse>(obj.CreateReader());
+            if (saveResp)
+            {
+                File.WriteAllText("lastProblem.txt", obj.ToString());
+            }
+
+            return GetProblemFromResp(resp);
+        }
+
         static Problem GetLastProblem()
         {
             using(var stream = File.OpenRead("lastProblem.txt"))
@@ -206,6 +214,12 @@ namespace Icfp2013
         {
             JsonReader reader = MakeRequest(RequestType.train, new JObject(new JProperty("size", size), new JProperty("operators", new JArray())));
             return GetProblemFromReader(reader, true);
+        }
+
+        static Problem GetRealProblem(Func<TrainResponse, bool> predicate)
+        {
+            Console.WriteLine("Problems of this type left: " + RealProblems.Count(a => predicate(a)));
+            return GetProblemFromResp(RealProblems.First(a => predicate(a)));
         }
 
         static ulong[] GetUlongsForEval(int num)
@@ -285,18 +299,24 @@ namespace Icfp2013
 
         static void MyProblems()
         {
+            string[] solvedIds = File.ReadAllLines("attempted.txt");
             string s = File.ReadAllText("myproblems.txt");
             JArray probs = JArray.Parse(s);
             JsonSerializer ser = new JsonSerializer();
 
-            List<TrainResponse> allProbs = new List<TrainResponse>();
+            RealProblems = new List<TrainResponse>();
             foreach (var p in probs)
             {
                 TrainResponse resp = ser.Deserialize<TrainResponse>(((JObject)p).CreateReader());
-                allProbs.Add(resp);
+                if (!solvedIds.Contains(resp.Id))
+                {
+                    RealProblems.Add(resp);
+                }
             }
 
-            int k = allProbs.Count(a => a.Operators.Contains("tfold"));
+            int k = RealProblems.Count(a => a.Operators.Contains("tfold"));
+
+
         }
 
 

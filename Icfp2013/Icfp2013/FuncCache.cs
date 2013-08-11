@@ -129,7 +129,7 @@ namespace Icfp2013
             //var ce = new CacheEntry() { Program = "(lambda (x) (fold (shl1 x) 1 (lambda (y z) (shl1 y))))" };
             //ce.ParseProgram();
 
-            string[] allLines = File.ReadAllLines("cache" + (CacheSize < 3 ? 3 : CacheSize) + ".txt");
+            string[] allLines = File.ReadAllLines("cache_full" + CacheSize + ".txt");
 
             for (int i = 0; i < allLines.Length; i++)
             {
@@ -149,28 +149,30 @@ namespace Icfp2013
 
         public void FilterByAllowedOperatorsAndSize(string[] allowedOps)
         {
-            FilteredEntries = Entries.Where(e => e.FuncSize == CacheSize + 1 && e.UsedOps.All(op => allowedOps.Contains(op))).ToList();
-
-            CacheEntry test = new CacheEntry() { Program = "(lambda (x) (plus (or x (not 1)) 1))" };
-            test.ParseProgram();
-
-            Evals tev = new Evals()
-            {
-                Values = Enumerable.Range(0, 1024).Select(i =>
-                    {
-                        test.Func.Context.Arg = Program.EvalArgs[i];
-                        return test.Func.Eval();
-                    }).ToArray()
-            };
+            FilteredEntries = Entries.Where(e => /*e.FuncSize == CacheSize + 1 &&*/ e.UsedOps.All(op => allowedOps.Contains(op))).ToList();
 
 
-            foreach (var antry in FilteredEntries)
-            {
-                Evals aev = new Evals() { Values = antry.Evals };
-                if (aev.Equals(tev))
-                {
-                }
-            }
+
+            //CacheEntry test = new CacheEntry() { Program = "(lambda (x) (or (shr4 0) (shr16 (not x))))" };
+            //test.ParseProgram();
+
+            //Evals tev = new Evals()
+            //{
+            //    Values = Enumerable.Range(0, 1024).Select(i =>
+            //        {
+            //            test.Func.Context.Arg = Program.EvalArgs[i];
+            //            return test.Func.Eval();
+            //        }).ToArray()
+            //};
+
+
+            //foreach (var antry in FilteredEntries)
+            //{
+            //    Evals aev = new Evals() { Values = antry.Evals };
+            //    if (aev.Equals(tev))
+            //    {
+            //    }
+            //}
 
         }
     }
