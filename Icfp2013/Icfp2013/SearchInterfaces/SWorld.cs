@@ -68,7 +68,7 @@ namespace Icfp2013
 
         public double GetTransitionCost(IState from, IAction action)
         {
-            return 100;
+            return ((SAction)action).Cost;
         }
     }
 }

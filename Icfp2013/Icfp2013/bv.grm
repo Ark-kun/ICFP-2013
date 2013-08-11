@@ -1,0 +1,14 @@
+Identifier = {Letter}+
+UnaryOperator = 'shl1' | 'shr1' | 'shr4' | 'shr16' | 'not'
+BinaryOperator = 'and' | 'or' | 'xor' | 'plus' 
+TernaryOperator = 'if0'
+FoldOperator = 'fold' 
+"Start Symbol" = <Lambda>
+<Lambda> ::= '(lambda (' <IdentifiersList> ')' <Function> ')'
+<IdentifiersList> ::= Identifier | <IdentifiersList> Identifier
+<Function> ::= <NullaryFunc> | <UnaryFunc> | <BinaryFunc> | <TernaryFunc> | <FoldFunc>
+<NullaryFunc> ::= Identifier | '0' | '1'
+<UnaryFunc> ::= '(' UnaryOperator <Function> ')' 
+<BinaryFunc> ::= '(' BinaryOperator <Function> <Function> ')'
+<TernaryFunc> ::= '(' TernaryOperator <Function> <Function> <Function> ')'
+<FoldFunc> ::= '(' FoldOperator <Function> <Function> <Lambda> ')'

@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Net;
 using System.IO;
+using System.Threading;
 
 namespace Icfp2013
 {
@@ -27,6 +28,10 @@ namespace Icfp2013
 
         static void Main(string[] args)
         {
+            MyProblems();
+
+
+
             if (File.Exists("randoms.txt"))
             {
                 EvalArgs = File.ReadAllLines("randoms.txt").Select(a => ulong.Parse(a, System.Globalization.NumberStyles.HexNumber)).ToArray();
@@ -34,44 +39,91 @@ namespace Icfp2013
             else
             {
                 Random rng = new Random(3137);
-                EvalArgs = GetUlongsForEval(128).Concat(Enumerable.Range(0, 1024 - 128).Select(a => GetRandomUlong(rng))).ToArray();
+                EvalArgs = (new[] { (ulong)0 }).Concat(GetUlongsForEval(128)).Concat(Enumerable.Range(0, 1024 - 128 - 1).Select(a => GetRandomUlong(rng))).ToArray();
                 File.WriteAllLines("randoms.txt", EvalArgs.Select(a => a.ToString("X")));
             }
 
+            new FuncCache();
 
 
-            //string line = File.ReadAllLines("cache4.txt")[12];
+
+            //string line = File.ReadAllLines("cache3.txt")[12];
             //string[] split = line.Split('\t');
             //ulong[] cacheResult = split[2].Split(',').Select(a => ulong.Parse(a, System.Globalization.NumberStyles.HexNumber)).ToArray();
 
-            //bool result = CheckEvalProgram(split[0], cacheResult);
-           
-            Searcher s = new Searcher();
-            s.GenerateCache();
+            //bool reslt = CheckEvalProgram(split[0], cacheResult);
+
+            //Searcher sg = new Searcher();
+            //sg.GenerateCache();
 
 
-            //Dzugaru.Search.Solver.IterativeDeepeningStep += () => { Searcher.AllEvals.Clear(); };
-            //Problem p = GetTrainProblem(12);
+            Dzugaru.Search.Solver.IterativeDeepeningStep += () => { Searcher.AllEvals.Clear(); System.IO.File.AppendAllText("allguesses.txt", "--------------------\r\n"); };
 
-            //Console.WriteLine("Got problem: " + p.ToString());
-            //File.AppendAllText("problems.txt", p.ID + "\r\n" + p.ToString());
+            int[] cacheSizes = new[] { 5 };
 
+            int wins = 0, losses = 0;
+            int haltID = 0;            
+            for (;;)
+            {
+                File.Delete("allguesses.txt");
+                //Problem p = GetTrainProblem(12);
+                Problem p = GetLastProblem();
+                
 
-            //Searcher s = new Searcher();
-            //FunctionTreeNode result = s.Find(p);
-            //if (result != null)
-            //{
-            //    Console.WriteLine("Solution found! " + result + ", nodes expanded: " + Dzugaru.Search.Solver.NodesExpanded);
+                Console.WriteLine("\r\nGot problem: " + p.ToString());
 
-            //    if (SubmitGuess(p.ID, result))
-            //    {
-            //        Console.WriteLine("Guess accepted!!");
-            //    }
+               
 
-            //}
+                for (int i=0; i < cacheSizes.Length; i++)
+                {
+                    Searcher.UseCacheOfSize = cacheSizes[i];
+                    FuncCache.S.ReadCache(p);                                    
 
+                    int currHaltID = haltID;
+                    Task haltTask = new Task(() => { Thread.Sleep(TimeSpan.FromSeconds(15)); if (currHaltID != haltID) return; Dzugaru.Search.Solver.ShouldHaltSearch = true; });
+                    haltTask.Start();
 
-           
+                    Searcher s = new Searcher();
+                    FunctionTreeNode result = s.Find(p);
+                    if (result != null)
+                    {
+                        haltID++;
+                        Console.WriteLine("Solution found! " + result + ", nodes expanded: " + Dzugaru.Search.Solver.NodesExpanded);
+
+                        if (p.IsTFoldProblem)
+                        {
+                            var tfoldRoot = new FunctionTreeNode(result.Context) { Operator = new Operators.Fold() };
+                            tfoldRoot.Children.Add(new FunctionTreeNode(result.Context) { Operator = new Operators.Arg(0) });
+                            tfoldRoot.Children.Add(new FunctionTreeNode(result.Context) { Operator = new Operators.Zero() });
+                            tfoldRoot.Children.Add(result);
+
+                            result = tfoldRoot;
+                        }
+
+                        if (SubmitGuess(p.ID, result))
+                        {
+                            Console.WriteLine("Guess accepted!!");
+                            wins++;                            
+                        }
+                        else
+                        {
+                            Console.WriteLine("Mismatch!");
+                            losses++;                            
+                        }
+                        
+                        break;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Cant find in time!");
+                        Dzugaru.Search.Solver.ShouldHaltSearch = false;
+                        Searcher.UseCacheOfSize = 0; //try without cache
+                    }
+                }
+
+                Console.WriteLine("Score: " + wins + "/" + losses);
+                Thread.Sleep(20000);
+            }
 
             Console.ReadLine();
         }
@@ -101,15 +153,18 @@ namespace Icfp2013
             }
         }
 
-        static Problem GetTrainProblem(int size)
+        static Problem GetProblemFromReader(JsonReader reader, bool saveResp)
         {
-            JsonReader reader = MakeRequest(RequestType.train, new JObject(new JProperty("size", size + 1), new JProperty("operators", new JArray("fold"))));
             JsonSerializer ser = new JsonSerializer();
-            TrainResponse resp = ser.Deserialize<TrainResponse>(reader);
+            JObject obj = JObject.Load(reader);
+            TrainResponse resp = ser.Deserialize<TrainResponse>(obj.CreateReader());
 
-          
+            if (saveResp)
+            {
+                File.WriteAllText("lastProblem.txt", obj.ToString());
+            }
 
-            var evalJObject =  new JObject(
+            var evalJObject = new JObject(
                 new JProperty("id", resp.Id),
                 new JProperty("arguments", new JArray(EvalArgs.Take(256).Select(a => a.ToString("X")).ToArray())));
             reader = MakeRequest(RequestType.eval, evalJObject);
@@ -118,12 +173,12 @@ namespace Icfp2013
             ulong[] results = evalResp["outputs"].Value<JArray>().Select(a => ulong.Parse(a.Value<string>().Substring(2), System.Globalization.NumberStyles.HexNumber)).ToArray();
 
             Problem pr = new Problem()
-                {
-                    ID = resp.Id,
-                    Size = size,
-                    Evals = new ulong[results.Length][],
-                    Solution = resp.Program
-                };
+            {
+                ID = resp.Id,
+                Size = resp.Size,
+                Evals = new ulong[results.Length][],
+                Solution = resp.Program
+            };
 
             pr.SetAllowedOperators(resp.Operators);
 
@@ -133,6 +188,24 @@ namespace Icfp2013
             }
 
             return pr;
+        }
+
+        static Problem GetLastProblem()
+        {
+            using(var stream = File.OpenRead("lastProblem.txt"))
+            {
+                MemoryStream ss = new MemoryStream();
+                stream.CopyTo(ss);
+                ss.Position = 0;
+                JsonReader reader = new JsonTextReader(new StreamReader(ss));
+                return GetProblemFromReader(reader, false);
+            }
+        }
+
+        static Problem GetTrainProblem(int size)
+        {
+            JsonReader reader = MakeRequest(RequestType.train, new JObject(new JProperty("size", size), new JProperty("operators", new JArray())));
+            return GetProblemFromReader(reader, true);
         }
 
         static ulong[] GetUlongsForEval(int num)
@@ -209,6 +282,23 @@ namespace Icfp2013
 
             return true;
         }
+
+        static void MyProblems()
+        {
+            string s = File.ReadAllText("myproblems.txt");
+            JArray probs = JArray.Parse(s);
+            JsonSerializer ser = new JsonSerializer();
+
+            List<TrainResponse> allProbs = new List<TrainResponse>();
+            foreach (var p in probs)
+            {
+                TrainResponse resp = ser.Deserialize<TrainResponse>(((JObject)p).CreateReader());
+                allProbs.Add(resp);
+            }
+
+            int k = allProbs.Count(a => a.Operators.Contains("tfold"));
+        }
+
 
         //Console.WriteLine(s.VariantsCount);
 

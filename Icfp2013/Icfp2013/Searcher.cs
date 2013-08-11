@@ -21,6 +21,8 @@ namespace Icfp2013
         public static HashSet<Evals> AllEvals;
         public static StreamWriter CacheStreamWriter;
 
+        public static int UseCacheOfSize = 4;
+
         public static Operators.Op[][] Ops = new Op[][] 
         {
             new Op[]{
@@ -65,21 +67,28 @@ namespace Icfp2013
         {
             AllEvals = new HashSet<Evals>();
             SWorld world = new SWorld() { Problem = p };
-            //var result = Dzugaru.Search.Solver.BreadthFirstSearch(world, p);
+
+            //var result = Dzugaru.Search.Solver.UniformCostSearch(world, p, false);
             var result = Dzugaru.Search.Solver.IterativeDeepeningTreeSearch(world, p);
-            //var result = Dzugaru.Search.Solver.SimplifiedMemoryBoundAStar(world, p, 1000);
 
-            FunctionTreeNode res = ((SAction)result.Last()).Next.FunctionTreeRoot;
-            
+            //TODO!!!!!!!!! make equals actually by hash!
+            //var result = Dzugaru.Search.Solver.SimplifiedMemoryBoundAStar(world, p, 50000);
 
-            return res;
+            if (result != null)
+            {
+                return ((SAction)result.Last()).Next.FunctionTreeRoot;
+            }
+            else
+            {
+                return null;
+            }
         }
 
         public void GenerateCache()
         {
-            for (int i = 3; i < 20; i++)
+            for (int i = 5; i < 6; i++)
             {
-                using (var stream = File.Open("cache" + i + ".txt", FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
+                using (var stream = File.Open("cache_new" + i + ".txt", FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
                 {
                     CacheStreamWriter = new StreamWriter(stream);
 

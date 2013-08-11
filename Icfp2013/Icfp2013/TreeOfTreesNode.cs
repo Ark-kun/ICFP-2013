@@ -14,6 +14,7 @@ namespace Icfp2013
         public int Size;
         public FunctionTreeNode FunctionTreeRoot;
         public bool HasFold;
+        public int NumCachedOps = 0;
 
         //public List<TreeOfTreesNode> Children;
         //public TreeOfTreesNode Parent;
@@ -27,15 +28,12 @@ namespace Icfp2013
 
         public IEnumerable<IAction> GetNext(FunctionTreeNode node, Problem problem)
         {
-            foreach (var ch in node.Children)
+            if (NumCachedOps > 0)
             {
-                foreach (var a in GetNext(ch, problem))
-                {
-                    yield return a;
-                }
+                yield break;
             }
 
-            if (node.Children.Count < MaxArity)
+            if (node.Children.Count < MaxArity && !(node.Operator is Operators.CachedOp))
             {
                 foreach(var upperOp in GetAllowedOpsUpper(node, problem))
                 {
@@ -64,15 +62,15 @@ namespace Icfp2013
                         //System.IO.File.AppendAllText("allguesses.txt", newTreeOfTreesNode.FunctionTreeRoot + "\r\n");
 
 
-                        newTreeOfTreesNode.FunctionTreeRoot.CalcFuncEvals();
-                        if (!Searcher.AllEvals.Contains(newTreeOfTreesNode.FunctionTreeRoot.CalculatedEvals))
-                        {
-                            Searcher.AllEvals.Add(newTreeOfTreesNode.FunctionTreeRoot.CalculatedEvals);
+                        newTreeOfTreesNode.FunctionTreeRoot.CalcFuncEvals(problem);
+                        //if (!Searcher.AllEvals.Contains(newTreeOfTreesNode.FunctionTreeRoot.CalculatedEvals))
+                        //{
+                        //    Searcher.AllEvals.Add(newTreeOfTreesNode.FunctionTreeRoot.CalculatedEvals);
                             //Console.WriteLine(newTreeOfTreesNode.FunctionTreeRoot);
-                            Searcher.CacheStreamWriter.Write(newTreeOfTreesNode.FunctionTreeRoot + "\t" + newTreeOfTreesNode.HasFold + "\t" + newTreeOfTreesNode.FunctionTreeRoot.CalculatedEvals.ToString() + "\r\n");
-                           
-                            yield return new SAction() { Next = newTreeOfTreesNode };
-                        }
+                            //Searcher.CacheStreamWriter.Write(newTreeOfTreesNode.FunctionTreeRoot + "\t" + newTreeOfTreesNode.HasFold + "\t" + newTreeOfTreesNode.FunctionTreeRoot.CalculatedEvals.ToString() + "\r\n");
+
+                        yield return new SAction() { Next = newTreeOfTreesNode, Cost = newTreeOfTreesNode.FunctionTreeRoot.GetSize() - FunctionTreeRoot.GetSize() };
+                        //}
 
                         //else
                         //{
@@ -80,6 +78,46 @@ namespace Icfp2013
                         //    //Console.WriteLine(newTreeOfTreesNode.FunctionTreeRoot);
                         //}
                     }
+
+                    //adding cached (only if not present)
+                    if (NumCachedOps == 0 && Searcher.UseCacheOfSize > 0)
+                    {
+                        foreach (var ce in FuncCache.S.FilteredEntries)
+                        {
+                            if (ce.HasFold && (HasFold || upperOp is Operators.Fold)) continue;
+                            var cacheOp = new Operators.CachedOp() { CacheEntry = ce };
+
+                            FunctionTreeNode clone = FunctionTreeRoot.Clone();
+                            var newNode = new FunctionTreeNode(clone.Context, node.LastClonedTo) { Operator = cacheOp, IsInsideFoldLambda = node.LastClonedTo.IsInsideFoldLambda };
+                            node.LastClonedTo.Children.Add(newNode);
+                            node.LastClonedTo.Operator = upperOp;
+
+                            var newTreeOfTreesNode = new TreeOfTreesNode(clone, this.Size + 1, this) { HasFold = this.HasFold };
+                            if (upperOp is Operators.Fold)
+                            {
+                                newTreeOfTreesNode.HasFold = true;
+                                if (node.LastClonedTo.Children.Count == 3)
+                                {
+                                    newNode.IsInsideFoldLambda = true;
+                                }
+                            }
+
+                            newTreeOfTreesNode.NumCachedOps = this.NumCachedOps + 1;
+                            newTreeOfTreesNode.FunctionTreeRoot.HasCacheOp = true;
+                            newTreeOfTreesNode.FunctionTreeRoot.CalcFuncEvals(problem);
+                            yield return new SAction() { Next = newTreeOfTreesNode, Cost = newTreeOfTreesNode.FunctionTreeRoot.GetSize() - FunctionTreeRoot.GetSize() };
+                        }
+                    }
+                }
+            }
+
+
+            var shuffledChilrden = Shuffle(node.Children);
+            foreach (var ch in shuffledChilrden)
+            {
+                foreach (var a in GetNext(ch, problem))
+                {
+                    yield return a;
                 }
             }
         }
@@ -90,7 +128,7 @@ namespace Icfp2013
             int arity = node.Children.Count + 1;
             for (int i = 0; i < Searcher.Ops[arity].Length; i++)
             {
-                if (/*!problem.AllowedOperators.Contains(new Tuple<int,int>(arity, i)) ||*/
+                if (!problem.AllowedOperators.Contains(new Tuple<int,int>(arity, i)) ||
                     arity == 3 && HasFold && Searcher.Ops[arity][i] is Operators.Fold) continue; //only one fold allowed per function
                 result.Add(Searcher.Ops[arity][i]);
             }
@@ -103,7 +141,7 @@ namespace Icfp2013
             var result = new List<Operators.Op>();
             for (int i = 0; i < Searcher.Ops[0].Length; i++)
             {
-                if (!node.IsInsideFoldLambda && !(upperOp is Operators.Fold) &&
+                if (!problem.IsTFoldProblem && !node.IsInsideFoldLambda && !(upperOp is Operators.Fold) &&
                     (Searcher.Ops[0][i] is Operators.Arg) && ((Operators.Arg)Searcher.Ops[0][i]).ArgIndex != 0) continue; //y and z allowed only inside fold lambda
                 result.Add(Searcher.Ops[0][i]);
             }
@@ -128,6 +166,8 @@ namespace Icfp2013
 
             return result;
         }
+
+
 
         //public void CreateChildren()
         //{
@@ -160,6 +200,16 @@ namespace Icfp2013
         public bool Equals(IState other)
         {
             return ((TreeOfTreesNode)other).FunctionTreeRoot.Equals(this.FunctionTreeRoot);
+        }
+
+        public override bool Equals(object obj)
+        {
+            return Equals((TreeOfTreesNode)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return FunctionTreeRoot.GetHashCode();
         }
 
         public override string ToString()

@@ -21,8 +21,12 @@ namespace Icfp2013
         public ulong[][] Evals;
         public string Solution;
         public HashSet<Tuple<int, int>> AllowedOperators;
+        public string[] AllowedOperatorsStrings;
 
+        public bool IsTFoldProblem;
         public bool IsCacheGenerator;
+
+        
 
         public override string ToString()
         {            
@@ -38,7 +42,9 @@ namespace Icfp2013
         {
             get
             {
-                return new TreeOfTreesNode(new FunctionTreeNode(ctx) { Operator = Searcher.Ops[0][0] }, 1);
+                var func = new FunctionTreeNode(ctx) { Operator = Searcher.Ops[0][0] };
+                func.CalcFuncEvals(this);
+                return new TreeOfTreesNode(func, 1);
             }
         }
 
@@ -46,32 +52,64 @@ namespace Icfp2013
         {
             if (IsCacheGenerator) return false;
 
-            for (int i = 0; i < Evals.Length; i++)
+            var func = ((TreeOfTreesNode)state).FunctionTreeRoot;
+            if (func.ToString().Contains("if0 (plus 0 0) 1 x"))
             {
-                ctx.Arg = Evals[i][0];
-                if (((TreeOfTreesNode)state).FunctionTreeRoot.Eval() != Evals[i][1])
-                {                   
-                    return false;
-                }
+                System.IO.File.AppendAllText("allguesses.txt", func+"\r\n");
             }
 
-            return true;
+            //for (int i = 0; i < Evals.Length; i++)
+            //{                
+            //    if (((TreeOfTreesNode)state).FunctionTreeRoot.CalculatedEvals.Values[i] != Evals[i][1])
+            //    {                   
+            //        return false;
+            //    }
+            //}
+
+
+            if (((TreeOfTreesNode)state).FunctionTreeRoot.IsEvalsRight)
+            {
+                if (((TreeOfTreesNode)state).FunctionTreeRoot.HasCacheOp)
+                {
+                    Console.WriteLine("Solved using cache!!!");
+                }
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+
+            //return true;
         }
 
         public void SetAllowedOperators(string[] ops)
         {
+            AllowedOperatorsStrings = ops;
             AllowedOperators = new HashSet<Tuple<int, int>>();
             for (int a = 1; a <=3; a++)
             {
                 for (int j = 0; j < Searcher.Ops[a].Length; j++)
                 {
                     string sopString = Searcher.Ops[a][j].ToString().ToLowerInvariant();
-                    if (ops.Contains(sopString) || ops.Contains("tfold") && sopString == "fold")
+                    if (ops.Contains(sopString))
                     {
                         AllowedOperators.Add(new Tuple<int, int>(a, j));
                     }
                 }
             }
+
+            if (!AllowedOperators.Any(a => a.Item1 == 1))
+            {
+                AllowedOperators.Add(new Tuple<int, int>(1, 0));
+            }
+
+            if (!AllowedOperators.Any(a => a.Item1 == 2))
+            {
+                AllowedOperators.Add(new Tuple<int, int>(2, 0));
+            }
+
+            IsTFoldProblem = ops.Contains("tfold");            
         }
     }
 }

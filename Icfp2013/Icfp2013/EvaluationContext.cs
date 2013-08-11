@@ -8,6 +8,7 @@ namespace Icfp2013
 {
     class EvaluationContext
     {
+        public int ArgIndex;
         public ulong Arg;
         public ulong FoldY, FoldZ;        
     }

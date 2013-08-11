@@ -16,7 +16,10 @@ namespace Icfp2013
         public Operators.Op Operator;
         public FunctionTreeNode LastClonedTo;
         public bool IsInsideFoldLambda;
+
         public Evals CalculatedEvals;
+        public bool IsEvalsRight;
+        public bool HasCacheOp;
 
         public FunctionTreeNode(EvaluationContext ctx, FunctionTreeNode parent = null)
         {
@@ -41,13 +44,23 @@ namespace Icfp2013
 
         public int GetSize()
         {
-            //TODO: exceptions like fold?
-            return (Operator is Operators.Fold ? 2 : 1) + Children.Sum(c => c.GetSize());
+            int size = 0;
+            if(Operator is Operators.CachedOp)
+            {
+                size = ((Operators.CachedOp)Operator).CacheEntry.FuncSize;
+            }
+            else
+            {
+                size = 1;
+            }
+
+            size += Children.Sum(c => c.GetSize());
+            return size;
         }
 
         public FunctionTreeNode Clone()
         {
-            var clone = new FunctionTreeNode(Context, Parent) { Operator = this.Operator, IsInsideFoldLambda = this.IsInsideFoldLambda };
+            var clone = new FunctionTreeNode(Context, Parent) { Operator = this.Operator, IsInsideFoldLambda = this.IsInsideFoldLambda, HasCacheOp = this.HasCacheOp };
             this.LastClonedTo = clone;
             clone.Children = this.Children.Select(ch => ch.Clone()).ToList();
             return clone;
@@ -57,8 +70,7 @@ namespace Icfp2013
         {
             return new TreeVisualizer().Visualize(this);
         }
-
-        //TODO: bugged
+        
         public override bool Equals(object obj)
         {
             return Equals((FunctionTreeNode)obj);
@@ -66,39 +78,93 @@ namespace Icfp2013
 
         public override int GetHashCode()
         {
-            return this.ToString().GetHashCode();
+            return CalculatedEvals.GetHashCode();
         }
 
         public bool Equals(FunctionTreeNode other)
-        {            
-            if (Children.Count != other.Children.Count) return false;
-
-            for (int i = 0; i < Children.Count; i++)
-            {
-                if (!Children[i].Equals(other.Children[i])) return false;
-            }
-
-            return this.Operator == other.Operator; 
-        }
-        //
+        {
+            return false;
+            //return this.CalculatedEvals.Equals(other.CalculatedEvals); 
+        }       
         
 
-        public void CalcFuncEvals()
+        public void CalcFuncEvals(Problem p)
         {
-            int amount = 1024;
-            Evals ev = new Evals() { Values = new ulong[amount] };
-            for (int i = 0; i < amount; i++)
+            //EvalsCount++;
+            //int amount = 256;
+            //Evals ev = new Evals() { Values = new ulong[amount] };
+            //for (int i = 0; i < amount; i++)
+            //{
+            //    Context.ArgIndex = i;
+            //    Context.Arg = Program.EvalArgs[i];
+            //    ev.Values[i] = 0;// Eval();
+            //}
+            //CalculatedEvals = ev;
+
+            if (p.IsTFoldProblem)
             {
-                Context.Arg = Program.EvalArgs[i];
-                ev.Values[i] = Eval();
+                var tfoldRoot = new FunctionTreeNode(Context) { Operator = new Operators.Fold() };
+                tfoldRoot.Children.Add(new FunctionTreeNode(Context) { Operator = new Operators.Arg(0) });
+                tfoldRoot.Children.Add(new FunctionTreeNode(Context) { Operator = new Operators.Zero() });
+                tfoldRoot.Children.Add(this);
+
+                int amount = 256;
+                for (int i = 0; i < amount; i++)
+                {
+                    Context.ArgIndex = i;
+                    Context.Arg = Program.EvalArgs[i];
+                    if (tfoldRoot.Eval() != p.Evals[i][1])
+                    {
+                        IsEvalsRight = false;
+                        return;
+                    }
+                }
+
+                IsEvalsRight = true;
+            }
+            else
+            {
+                int amount = 256;
+                for (int i = 0; i < amount; i++)
+                {
+                    Context.ArgIndex = i;
+                    Context.Arg = Program.EvalArgs[i];
+                    if (Eval() != p.Evals[i][1])
+                    {
+                        IsEvalsRight = false;
+                        return;
+                    }
+                }
+
+                IsEvalsRight = true;
             }
 
-            CalculatedEvals = ev;
+            
         }
 
         public bool IsTFold()
         {
             return this.Operator is Operators.Fold && this.Children[0].Operator is Operators.Arg && this.Children[1].Operator is Operators.Zero;
+        }
+
+        public IEnumerable<string> GetUsedOps()
+        {
+            return GetAllUsedOps().ToArray().Distinct();
+        }
+
+        IEnumerable<string> GetAllUsedOps()
+        {
+            if (Operator.Arity > 0)
+            {
+                yield return Operator.ToString().ToLowerInvariant();
+            }
+            foreach (var ch in Children)
+            {
+                foreach (var op in ch.GetUsedOps())
+                {
+                    yield return op;
+                }
+            }
         }
     }
 }

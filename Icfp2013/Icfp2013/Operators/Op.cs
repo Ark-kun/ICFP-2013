@@ -254,4 +254,22 @@ namespace Icfp2013.Operators
             return "Fold";
         }
     }
+
+    class CachedOp : Op
+    {
+        public EvaluationContext Context { get; set; } 
+        public int Arity { get { return 0; } }
+        public FuncCache.CacheEntry CacheEntry { get; set; }
+        public ulong Eval(ulong[] arg)
+        {
+            return CacheEntry.Evals[Context.ArgIndex];
+        }
+
+        public override string ToString()
+        {
+            string p = CacheEntry.Program.Substring("(lambda (x) ".Length);
+            p = p.Substring(0, p.Length - 1);
+            return p;
+        }
+    }
 }

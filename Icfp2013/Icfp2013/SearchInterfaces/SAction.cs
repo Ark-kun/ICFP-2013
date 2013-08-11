@@ -9,6 +9,7 @@ namespace Icfp2013
     class SAction : Dzugaru.Search.IAction
     {
         public TreeOfTreesNode Next;
+        public int Cost;
 
         public override string ToString()
         {
