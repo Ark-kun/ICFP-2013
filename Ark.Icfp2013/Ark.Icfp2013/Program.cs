@@ -12,7 +12,7 @@ namespace Ark.Icfp2013 {
             var formulasByLevel = new List<List<FormulaNode>>();
             var allFormulas = new HashSet<FormulaNode>();
 
-            int maxLevel = 10;
+            int maxLevel = 15;
 
             //var nullaryOps = new FormulaNode[] { Zero, One, ArgX };
             var formulasLevel0 = new List<FormulaNode>();
@@ -47,7 +47,9 @@ namespace Ark.Icfp2013 {
                             foreach (var factory in unaryFactories) {
                                 var formula = factory(arg);
                                 if (formula != null) {
-                                    formula.CacheResults();
+                                    if (level <= 10) {
+                                        formula.CacheResults();
+                                    }
                                     if (allFormulas.Add(formula)) {
                                         formulas.Add(formula);
                                     } else {
@@ -70,7 +72,9 @@ namespace Ark.Icfp2013 {
                                     foreach (var factory in binaryFactories) {
                                         var formula = factory(arg1, arg2);
                                         if (formula != null) {
-                                            formula.CacheResults();
+                                            if (level <= 10) {
+                                                formula.CacheResults();
+                                            }
                                             if (allFormulas.Add(formula)) {
                                                 formulas.Add(formula);
                                             } else {
@@ -81,13 +85,14 @@ namespace Ark.Icfp2013 {
                             }
                         }
                     }
-                    Console.WriteLine("Count(size = {0}) = {1}", level, formulas.Count);
+                    Console.WriteLine("Count(size = {0}) = {1}; {2}", level, formulas.Count, DateTime.UtcNow);
                     formulasByLevel.Add(formulas);
                 }
             } catch (OutOfMemoryException ex) {
+                Console.WriteLine(ex);
             }
 
-            for (int level = 1; level <= maxLevel; level++) {
+            for (int level = 1; level <= formulasByLevel.Count; level++) {
                 Console.WriteLine("Count(size = {0}) = {1}", level, formulasByLevel[level].Count);
             }
             Console.ReadLine();
