@@ -7,14 +7,14 @@ using System.Threading.Tasks;
 
 namespace Ark.Icfp2013 {
     public class InputsGenerator {
-        public static ulong[] GetInputs() {
-            if (File.Exists("randoms.txt")) {
-                return File.ReadAllLines("randoms.txt").Select(a => ulong.Parse(a, System.Globalization.NumberStyles.HexNumber)).ToArray();
+        public static ulong[] GetInputs(int n) {
+            if (File.Exists("randoms2.txt")) {
+                return File.ReadAllLines("randoms2.txt").Select(a => ulong.Parse(a, System.Globalization.NumberStyles.HexNumber)).ToArray();
             } else {
                 Random rng = new Random(3137);
-                var inputs = GetUlongsForEval(128).Concat(Enumerable.Range(0, 1024 - 128).Select(a => GetRandomUlong(rng))).ToArray();
-                inputs[1023] = 0;
-                File.WriteAllLines("randoms.txt", inputs.Select(a => a.ToString("X")));
+                var inputs = GetUlongsForEval(128).Concat(Enumerable.Range(0, n - 128).Select(a => GetRandomUlong(rng))).ToArray();
+                inputs[n - 1] = 0;
+                File.WriteAllLines("randoms2.txt", inputs.Select(a => a.ToString("X")));
                 return inputs;
             }
         }
