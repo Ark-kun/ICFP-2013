@@ -41,11 +41,26 @@ namespace Ark.Icfp2013.Net {
                     }
                 } catch (Exception ex) {
                     Console.WriteLine(ex.Message);
-                    Console.WriteLine(ex);
+                    //Console.WriteLine(ex);
                     Thread.Sleep(1000);
                 }
             }
         }
+
+        public static List<TrainResponse> MyProblems() {
+            var reader = MakeRequest(RequestType.myproblems, new JObject());
+            string s = JObject.ReadFrom(reader).ToString();
+            File.WriteAllText("myproblems.txt", s);
+            
+            
+            //string s = File.ReadAllText("myproblems.txt");
+            JArray probs = JArray.Parse(s);
+            //JArray probs = JArray.ReadFrom(reader);
+            JsonSerializer ser = new JsonSerializer();
+
+            return probs.Select(p => ser.Deserialize<TrainResponse>(((JObject)p).CreateReader())).ToList();
+        }
+
 
         public static Problem GetTrainProblem(ProblemType problemType, int problemSize) {
             int size = problemSize + 1;
@@ -70,10 +85,13 @@ namespace Ark.Icfp2013.Net {
             JsonReader reader = MakeRequest(RequestType.train, new JObject(new JProperty("size", size), new JProperty("operators", operators)));
 
             TrainResponse response = _serializer.Deserialize<TrainResponse>(reader);
+            return ParseProblem(response);
+        }
 
+        public static Problem ParseProblem(TrainResponse response) {
             Problem problem = new Problem() {
                 ID = response.Id,
-                Size = size,
+                Size = response.Size,
                 Solution = response.Program
             };
 
@@ -126,6 +144,7 @@ namespace Ark.Icfp2013.Net {
 
             JObject result = (JObject)JObject.ReadFrom(reader);
 
+            Console.WriteLine("Result=" + result["status"].Value<string>());
             return result["status"].Value<string>() == "win";
         }
     }
