@@ -11,7 +11,18 @@ using System.Xml.Serialization;
 namespace Ark.Icfp2013 {
     class Program {
         static void Main(string[] args) {
-            var inputs = InputsGenerator.GetInputs();
+            var allProblems = Server.MyProblems();
+
+            var unsolvedProblems = allProblems.Where(p => p.Solved != true).ToArray();
+
+            var noTimeProblems = unsolvedProblems.Where(p => !p.TimeLeft.HasValue).ToArray();
+
+            var convertedProblems = noTimeProblems.Select(Server.ParseProblem).ToList();
+            var bonusProblems = convertedProblems.Where(p => (p.UsedOperators & OperatorType.Bonus) != OperatorType.None).OrderBy(p => p.Size).ToArray();
+
+            //return;
+            //var inputs = InputsGenerator.GetInputs(1024);
+            var inputs = InputsGenerator.GetInputs(256);
             var inputsDictionary = new Dictionary<ulong, int>();
             for (int i = 0; i < inputs.Length; i++) {
                 inputsDictionary.Add(inputs[i], i);
@@ -30,7 +41,7 @@ namespace Ark.Icfp2013 {
                 argX.Results[i] = inputs[i];
             }
 
-            int maxLevel = 8;
+            int maxLevel = 9;
 
             var unaryFactories = new Func<FormulaNode, FormulaNode>[] { Shl1.Create, Shr1.Create, Shr4.Create, Shr16.Create, Not.Create };
             var binaryFactories = new Func<FormulaNode, FormulaNode, FormulaNode>[] { And.Create, Or.Create, Xor.Create, Plus.Create };
@@ -51,40 +62,51 @@ namespace Ark.Icfp2013 {
                 }
             }
 
-            Problem problemToSolve = null;
-            string id = null;
-            string file = id + ".problem";
-            if (id == null || !File.Exists(file)) {
-                //problemToSolve = Server.GetTrainProblem(ProblemType.Normal, 15);
-                problemToSolve = Server.GetTrainProblem(ProblemType.Bonus, -1);
-                id = problemToSolve.ID;
-                file = id + ".problem";
-                //var problem = new Problem() {ID = ""};
+            foreach (var problemToSolve in bonusProblems) {
+                //Problem problemToSolve = null;
+                //string id = null;
+                //string file = id + ".problem";
+                //if (id == null || !File.Exists(file)) {
+                //    //problemToSolve = Server.GetTrainProblem(ProblemType.Normal, 15);
+                //    problemToSolve = Server.GetTrainProblem(ProblemType.Bonus, -1);
+                //    id = problemToSolve.ID;
+                //    file = id + ".problem";
+                //    //var problem = new Problem() {ID = ""};
 
                 var results = Server.EvalProblemOnAllInputs(problemToSolve.ID, inputs);
                 problemToSolve.EvalResults = results;
-                using (var writer = File.CreateText(file)) {
-                    writer.WriteLine("id=" + problemToSolve.ID);
-                    writer.WriteLine("size=" + problemToSolve.Size);
-                    writer.WriteLine("solution=" + problemToSolve.Solution);
-                    writer.WriteLine("operators=" + problemToSolve.UsedOperators);
-                    writer.WriteLine("results=");
-                    foreach (var kv in problemToSolve.EvalResults) {
-                        writer.WriteLine("{0}={1}", kv.Key, kv.Value);
-                    }
-                }
-            } else {
-                using (var reader = File.OpenText(file)) {
+                //    using (var writer = File.CreateText(file)) {
+                //        writer.WriteLine("id=" + problemToSolve.ID);
+                //        writer.WriteLine("size=" + problemToSolve.Size);
+                //        writer.WriteLine("solution=" + problemToSolve.Solution);
+                //        writer.WriteLine("operators=" + problemToSolve.UsedOperators);
+                //        writer.WriteLine("results=");
+                //        foreach (var kv in problemToSolve.EvalResults) {
+                //            writer.WriteLine("{0}={1}", kv.Key, kv.Value);
+                //        }
+                //    }
+                //} else {
+                //    using (var reader = File.OpenText(file)) {
 
-                }
+                //    }
+                //}
+
+                Log(string.Format("Trying problem {0}", problemToSolve.ID));
+
+                var isWin = SolveBonusProblem(inputs, inputsDictionary, generator, problemToSolve);
+                Log(string.Format("{0}: {1}", problemToSolve.ID, (isWin ? "win" : "fail")));
             }
-
-            SolveBonusProblem(inputs, inputsDictionary, generator, problemToSolve);
 
             Console.ReadLine();
         }
 
-        private static void SolveBonusProblem(ulong[] inputs, Dictionary<ulong, int> inputsDictionary, FormulasGenerator generator, Problem problemToSolve) {
+        static void Log(string msg) {
+            Console.WriteLine(msg);
+            File.AppendAllText("solve.log", msg + "\n");
+        }
+
+
+        private static bool SolveBonusProblem(ulong[] inputs, Dictionary<ulong, int> inputsDictionary, FormulasGenerator generator, Problem problemToSolve) {
             int inputsCount = inputs.Length;
             ulong[] orderedEvalResults = new ulong[inputs.Length];
             foreach (var kv in problemToSolve.EvalResults) {
@@ -200,9 +222,14 @@ namespace Ark.Icfp2013 {
             }
 
             if (guesses.Any()) {
+                Log(string.Format("{0}: Guesses: {1}", problemToSolve.ID, guesses.Count));
                 var guessFormula = guesses.First();
                 var rootFormula = new RootLambda(guessFormula);
-                Server.SubmitGuess(problemToSolve.ID, rootFormula);
+                Log(string.Format("{0}: GuessFormula: {1}", problemToSolve.ID, rootFormula));
+                return Server.SubmitGuess(problemToSolve.ID, rootFormula);
+            } else {
+                Log(string.Format("{0}: No guesses", problemToSolve.ID));
+                return false;
             }
         }
 
