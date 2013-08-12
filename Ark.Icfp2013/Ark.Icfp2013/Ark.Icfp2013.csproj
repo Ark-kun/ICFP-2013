@@ -67,7 +67,6 @@
     <Compile Include="ArrayEqualityHelpers.cs" />
     <Compile Include="FormulasGenerator.cs" />
     <Compile Include="InputsGenerator.cs" />
-    <Compile Include="Net\EvalResponse.cs" />
     <Compile Include="Net\RequestType.cs" />
     <Compile Include="Net\Problem.cs" />
     <Compile Include="OperatorType.cs" />
